@@ -537,7 +537,7 @@ export default function DocumentApp() {
 
       <div className="min-h-screen flex flex-col md:flex-row bg-slate-100">
         {/* SIDEBAR */}
-        <div id="sidebar" className="w-full md:w-[420px] lg:w-[460px] bg-white border-r border-slate-200 md:h-screen md:overflow-y-auto flex-shrink-0 z-10 shadow-lg">
+        <div id="sidebar" className="w-full md:w-[420px] lg:w-[460px] bg-white border-r border-slate-200 md:sticky md:top-0 md:h-screen md:overflow-y-auto flex-shrink-0 z-10 shadow-lg">
           <div className="p-5">
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
