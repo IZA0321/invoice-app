@@ -6,17 +6,17 @@
   <rect x="8" y="8" width="184" height="184" fill="none" stroke="#E82222" stroke-width="5"/>
 
   <!-- 右列：I・Z・A（右から読む） -->
-  <text x="148" y="74"  font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">I</text>
-  <text x="148" y="122" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">Z</text>
-  <text x="148" y="170" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">A</text>
+  <text x="148" y="65"  font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">I</text>
+  <text x="148" y="113" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">Z</text>
+  <text x="148" y="161" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">A</text>
 
   <!-- 中列：株・式・会 -->
-  <text x="100" y="74"  font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">株</text>
-  <text x="100" y="122" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">式</text>
-  <text x="100" y="170" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">会</text>
+  <text x="100" y="65"  font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">株</text>
+  <text x="100" y="113" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">式</text>
+  <text x="100" y="161" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">会</text>
 
   <!-- 左列：社・之・印 -->
-  <text x="52" y="74"  font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">社</text>
-  <text x="52" y="122" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">之</text>
-  <text x="52" y="170" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">印</text>
+  <text x="52" y="65"  font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">社</text>
+  <text x="52" y="113" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">之</text>
+  <text x="52" y="161" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif" font-size="48" font-weight="bold" fill="#E82222" text-anchor="middle">印</text>
 </svg>
