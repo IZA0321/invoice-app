@@ -22,12 +22,14 @@ export interface DocumentRecord {
   drive_file_id?: string | null;
   payment_status?: "unpaid" | "paid";
   paid_at?: string | null;
+  due_date?: string | null;
   created_at?: string;
 }
 
 // Supabase migration required:
 // ALTER TABLE documents ADD COLUMN IF NOT EXISTS payment_status text DEFAULT 'unpaid';
 // ALTER TABLE documents ADD COLUMN IF NOT EXISTS paid_at date;
+// ALTER TABLE documents ADD COLUMN IF NOT EXISTS due_date date;
 
 export async function updatePaymentStatus(
   id: string,

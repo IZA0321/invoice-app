@@ -256,11 +256,15 @@ export default function DocumentApp() {
         const prefill = JSON.parse(prefillStr);
         sessionStorage.removeItem("izaPrefill");
         if (prefill.docType) setDocType(prefill.docType);
+        // 見積→請求書変換時は件名に元番号を付記
+        const autoSubject = prefill.fromDocType === "quotation" && prefill.docType === "invoice" && prefill.fromDocNumber
+          ? `${prefill.subject || ""}（見積書 ${prefill.fromDocNumber} より）`.trim()
+          : prefill.subject;
         setData((prev) => ({
           ...prev,
           recipientName: prefill.recipientName ?? prev.recipientName,
           recipientHonorific: prefill.recipientHonorific ?? prev.recipientHonorific,
-          subject: prefill.subject ?? prev.subject,
+          subject: autoSubject ?? prev.subject,
           paymentMethod: prefill.paymentMethod ?? prev.paymentMethod,
           remarks: prefill.remarks ?? prev.remarks,
           items: prefill.items && prefill.items.length > 0 ? prefill.items.map((it: Item) => ({ ...it, id: Date.now() + Math.random() })) : prev.items,
@@ -399,6 +403,8 @@ export default function DocumentApp() {
           remarks: data.remarks || null,
           pdf_url: result.webViewLink,
           drive_file_id: result.id,
+          due_date: docType === "invoice" && data.extraDate ? data.extraDate : null,
+          payment_status: docType === "invoice" ? "unpaid" : undefined,
         });
       } catch (e) {
         console.warn("履歴の記録に失敗:", e);
