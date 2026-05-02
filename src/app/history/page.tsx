@@ -3,16 +3,30 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { listDocuments, DocumentRecord, supabase, deleteDocument, getMonthlySummary, MonthlySummary } from "@/lib/supabase";
+import { listDocuments, DocumentRecord, supabase, deleteDocument, getMonthlySummary, MonthlySummary, updatePaymentStatus } from "@/lib/supabase";
 
-type Filter = "all" | "receipt" | "invoice" | "quotation";
+type Filter = "all" | "receipt" | "invoice" | "quotation" | "unpaid";
 type DocType = "receipt" | "invoice" | "quotation";
 
+interface CustomerExtra {
+  tel: string;
+  email: string;
+  contact: string;
+  memo: string;
+}
+
 const TYPE_LABEL: Record<string, { label: string; color: string }> = {
-  receipt: { label: "領収書", color: "#10b981" },
-  invoice: { label: "請求書", color: "#3b82f6" },
+  receipt:   { label: "領収書", color: "#10b981" },
+  invoice:   { label: "請求書", color: "#3b82f6" },
   quotation: { label: "見積書", color: "#f59e0b" },
 };
+
+function loadCustomerExtras(): Record<string, CustomerExtra> {
+  try { return JSON.parse(localStorage.getItem("izaCustomers") || "{}"); } catch { return {}; }
+}
+function saveCustomerExtras(data: Record<string, CustomerExtra>) {
+  try { localStorage.setItem("izaCustomers", JSON.stringify(data)); } catch {}
+}
 
 function prefillAndNavigate(d: DocumentRecord, newType: DocType, router: ReturnType<typeof useRouter>) {
   const prefill = {
@@ -28,6 +42,15 @@ function prefillAndNavigate(d: DocumentRecord, newType: DocType, router: ReturnT
   router.push("/documents");
 }
 
+function buildMailtoHref(d: DocumentRecord): string {
+  const t = TYPE_LABEL[d.doc_type];
+  const subject = encodeURIComponent(`${t.label}（${d.doc_number}）_IZA株式会社`);
+  const body = encodeURIComponent(
+    `${d.recipient_name} ${d.recipient_honorific || "御中"}\n\nお世話になっております。IZA株式会社の高橋でございます。\n\n${t.label}をお送りいたします。\n下記URLよりご確認ください。\n\n${d.pdf_url || ""}\n\n何卒よろしくお願い申し上げます。\n\n--\nIZA株式会社\n高橋賢太朗\n〒180-0022 東京都武蔵野市境1-15-10 イストワール302\nTEL: 090-7542-9315\niza.japan2025@gmail.com`
+  );
+  return `mailto:?subject=${subject}&body=${body}`;
+}
+
 export default function HistoryPage() {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
@@ -37,11 +60,19 @@ export default function HistoryPage() {
   const [showSummary, setShowSummary] = useState(false);
   const [year, setYear] = useState(new Date().getFullYear());
   const [summary, setSummary] = useState<MonthlySummary[]>([]);
+  const [paymentUpdating, setPaymentUpdating] = useState<string | null>(null);
+
+  // 顧客マスタ編集
+  const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
+  const [customerExtras, setCustomerExtras] = useState<Record<string, CustomerExtra>>({});
+  const [editForm, setEditForm] = useState<CustomerExtra>({ tel: "", email: "", contact: "", memo: "" });
 
   useEffect(() => {
-    if (showSummary) {
-      getMonthlySummary(year).then(setSummary);
-    }
+    setCustomerExtras(loadCustomerExtras());
+  }, []);
+
+  useEffect(() => {
+    if (showSummary) getMonthlySummary(year).then(setSummary);
   }, [showSummary, year]);
 
   const handleDelete = async (d: DocumentRecord) => {
@@ -55,29 +86,142 @@ export default function HistoryPage() {
     }
   };
 
+  const handleTogglePayment = async (d: DocumentRecord) => {
+    if (!d.id) return;
+    const newStatus = d.payment_status === "paid" ? "unpaid" : "paid";
+    setPaymentUpdating(d.id);
+    try {
+      await updatePaymentStatus(d.id, newStatus);
+      setDocs((prev) =>
+        prev.map((x) =>
+          x.id === d.id
+            ? { ...x, payment_status: newStatus, paid_at: newStatus === "paid" ? new Date().toISOString().split("T")[0] : null }
+            : x
+        )
+      );
+    } catch (e) {
+      alert("更新に失敗しました: " + (e instanceof Error ? e.message : "不明なエラー"));
+    } finally {
+      setPaymentUpdating(null);
+    }
+  };
+
+  const handleCopyAndMail = (d: DocumentRecord, router: ReturnType<typeof useRouter>) => {
+    prefillAndNavigate(d, d.doc_type as DocType, router);
+    if (d.pdf_url) {
+      setTimeout(() => { window.open(buildMailtoHref(d), "_self"); }, 300);
+    }
+  };
+
+  // 顧客マスタ編集操作
+  const openCustomerEdit = (name: string) => {
+    const existing = customerExtras[name] || { tel: "", email: "", contact: "", memo: "" };
+    setEditForm(existing);
+    setEditingCustomer(name);
+  };
+  const saveCustomerEdit = () => {
+    if (!editingCustomer) return;
+    const updated = { ...customerExtras, [editingCustomer]: editForm };
+    setCustomerExtras(updated);
+    saveCustomerExtras(updated);
+    setEditingCustomer(null);
+  };
+
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const result = await listDocuments({
-        docType: filter === "all" ? undefined : filter,
-        limit: 200,
-      });
+      const result = await listDocuments({ limit: 200 });
       setDocs(result);
       setLoading(false);
     })();
-  }, [filter]);
+  }, []);
 
-  const filtered = search
-    ? docs.filter(
-        (d) =>
-          d.recipient_name.toLowerCase().includes(search.toLowerCase()) ||
-          (d.subject || "").toLowerCase().includes(search.toLowerCase()) ||
-          d.doc_number.includes(search)
-      )
-    : docs;
+  const filtered = (() => {
+    let base = docs;
+    if (filter === "unpaid") base = docs.filter((d) => d.doc_type === "invoice" && d.payment_status !== "paid");
+    else if (filter !== "all") base = docs.filter((d) => d.doc_type === filter);
+    if (search) base = base.filter(
+      (d) =>
+        d.recipient_name.toLowerCase().includes(search.toLowerCase()) ||
+        (d.subject || "").toLowerCase().includes(search.toLowerCase()) ||
+        d.doc_number.includes(search)
+    );
+    return base;
+  })();
+
+  const unpaidTotal = docs
+    .filter((d) => d.doc_type === "invoice" && d.payment_status !== "paid")
+    .reduce((s, d) => s + d.total_amount, 0);
+  const unpaidCount = docs.filter((d) => d.doc_type === "invoice" && d.payment_status !== "paid").length;
 
   return (
     <main className="min-h-screen bg-slate-100">
+      {/* 顧客マスタ編集モーダル */}
+      {editingCustomer && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4">
+            <h2 className="text-base font-bold text-slate-800">顧客情報編集</h2>
+            <p className="text-sm font-semibold text-blue-700">{editingCustomer}</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">電話番号</label>
+                <input
+                  type="tel"
+                  value={editForm.tel}
+                  onChange={(e) => setEditForm({ ...editForm, tel: e.target.value })}
+                  placeholder="03-xxxx-xxxx"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">メールアドレス</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  placeholder="contact@example.com"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">担当者名</label>
+                <input
+                  type="text"
+                  value={editForm.contact}
+                  onChange={(e) => setEditForm({ ...editForm, contact: e.target.value })}
+                  placeholder="山田 太郎"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">メモ</label>
+                <textarea
+                  value={editForm.memo}
+                  onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
+                  rows={2}
+                  placeholder="取引条件、支払サイクルなど"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setEditingCustomer(null)}
+                className="flex-1 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-200"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={saveCustomerEdit}
+                className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700"
+              >
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-10 flex items-center gap-3 shadow-sm">
         <Link href="/documents" className="text-blue-500 text-lg">‹</Link>
         <div className="flex-1">
@@ -93,6 +237,20 @@ export default function HistoryPage() {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+        {/* 未収サマリー */}
+        {unpaidCount > 0 && (
+          <div
+            className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-red-100 transition-colors"
+            onClick={() => setFilter("unpaid")}
+          >
+            <div>
+              <p className="text-xs font-bold text-red-700">⚠️ 未収入金 {unpaidCount}件</p>
+              <p className="text-lg font-bold text-red-800">¥{unpaidTotal.toLocaleString()}</p>
+            </div>
+            <span className="text-xs text-red-600 font-semibold">一覧を見る →</span>
+          </div>
+        )}
+
         {/* Monthly Summary Toggle */}
         <div className="flex items-center gap-2">
           <button
@@ -137,28 +295,13 @@ export default function HistoryPage() {
                       <tr key={s.month} className={`border-t border-slate-100 ${total === 0 ? "text-slate-300" : ""}`}>
                         <td className="p-2 font-semibold">{Number(s.month.slice(5))}月</td>
                         <td className="p-2 text-right">
-                          {s.receipt_count > 0 ? (
-                            <>
-                              <div>{s.receipt_count}件</div>
-                              <div className="text-slate-400">¥{s.receipt_total.toLocaleString()}</div>
-                            </>
-                          ) : "—"}
+                          {s.receipt_count > 0 ? (<><div>{s.receipt_count}件</div><div className="text-slate-400">¥{s.receipt_total.toLocaleString()}</div></>) : "—"}
                         </td>
                         <td className="p-2 text-right">
-                          {s.invoice_count > 0 ? (
-                            <>
-                              <div>{s.invoice_count}件</div>
-                              <div className="text-slate-400">¥{s.invoice_total.toLocaleString()}</div>
-                            </>
-                          ) : "—"}
+                          {s.invoice_count > 0 ? (<><div>{s.invoice_count}件</div><div className="text-slate-400">¥{s.invoice_total.toLocaleString()}</div></>) : "—"}
                         </td>
                         <td className="p-2 text-right">
-                          {s.quotation_count > 0 ? (
-                            <>
-                              <div>{s.quotation_count}件</div>
-                              <div className="text-slate-400">¥{s.quotation_total.toLocaleString()}</div>
-                            </>
-                          ) : "—"}
+                          {s.quotation_count > 0 ? (<><div>{s.quotation_count}件</div><div className="text-slate-400">¥{s.quotation_total.toLocaleString()}</div></>) : "—"}
                         </td>
                       </tr>
                     );
@@ -187,25 +330,26 @@ export default function HistoryPage() {
         )}
 
         {/* Filter */}
-        <div className="grid grid-cols-4 gap-2">
-          {(["all", "receipt", "invoice", "quotation"] as Filter[]).map((f) => (
+        <div className="grid grid-cols-5 gap-1.5">
+          {(["all", "receipt", "invoice", "quotation", "unpaid"] as Filter[]).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={`py-2 text-xs font-bold rounded-lg transition-all ${
                 filter === f
-                  ? f === "all"
-                    ? "bg-slate-800 text-white"
-                    : "text-white shadow"
+                  ? f === "all" ? "bg-slate-800 text-white"
+                  : f === "unpaid" ? "bg-red-600 text-white"
+                  : "text-white shadow"
+                  : f === "unpaid" ? "bg-white text-red-600 border border-red-200 hover:bg-red-50"
                   : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
               }`}
               style={
-                filter === f && f !== "all"
+                filter === f && f !== "all" && f !== "unpaid"
                   ? { background: TYPE_LABEL[f].color }
                   : {}
               }
             >
-              {f === "all" ? "すべて" : TYPE_LABEL[f].label}
+              {f === "all" ? "すべて" : f === "unpaid" ? "未収" : TYPE_LABEL[f].label}
             </button>
           ))}
         </div>
@@ -228,49 +372,84 @@ export default function HistoryPage() {
           <div className="text-center text-sm text-slate-400 py-8">読み込み中...</div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-xl p-8 text-center text-sm text-slate-400 border border-slate-200">
-            まだ書類がありません
+            {filter === "unpaid" ? "未収入金はありません 🎉" : "まだ書類がありません"}
           </div>
         ) : (
           <div className="space-y-2">
             {filtered.map((d) => {
               const t = TYPE_LABEL[d.doc_type];
+              const isPaid = d.payment_status === "paid";
+              const isInvoice = d.doc_type === "invoice";
+              const extra = customerExtras[d.recipient_name];
               return (
                 <div
                   key={d.id}
-                  className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm"
+                  className={`bg-white rounded-xl p-4 border shadow-sm ${
+                    isInvoice && !isPaid ? "border-red-200" : "border-slate-200"
+                  }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start gap-3">
                     <span
-                      className="text-white text-xs font-bold px-2 py-1 rounded shrink-0"
+                      className="text-white text-xs font-bold px-2 py-1 rounded shrink-0 mt-0.5"
                       style={{ background: t.color }}
                     >
                       {t.label}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">
-                        {d.recipient_name} {d.recipient_honorific || "御中"}
-                      </p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-semibold text-slate-800 truncate">
+                          {d.recipient_name} {d.recipient_honorific || "御中"}
+                        </p>
+                        <button
+                          onClick={() => openCustomerEdit(d.recipient_name)}
+                          className="text-xs text-slate-400 hover:text-blue-500 shrink-0"
+                          title="顧客情報を編集"
+                        >
+                          ✏️
+                        </button>
+                        {extra && (extra.contact || extra.tel) && (
+                          <span className="text-xs text-slate-400">
+                            {extra.contact && `👤 ${extra.contact}`}
+                            {extra.contact && extra.tel && " · "}
+                            {extra.tel && `📞 ${extra.tel}`}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-500 truncate">
                         {d.subject || "（件名なし）"} · {d.doc_number}
                       </p>
                       <p className="text-xs text-slate-400">{d.issue_date}</p>
                     </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-bold text-slate-800 text-sm">
-                      ¥{d.total_amount.toLocaleString()}
-                    </p>
-                    {d.pdf_url && (
-                      <a
-                        href={d.pdf_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        Drive
-                      </a>
-                    )}
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-slate-800 text-sm">
+                        ¥{d.total_amount.toLocaleString()}
+                      </p>
+                      {isInvoice && (
+                        <button
+                          onClick={() => handleTogglePayment(d)}
+                          disabled={paymentUpdating === d.id}
+                          className={`mt-1 text-xs px-2 py-0.5 rounded-full font-bold border transition-colors ${
+                            isPaid
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100"
+                              : "bg-red-50 text-red-700 border-red-300 hover:bg-red-100"
+                          }`}
+                        >
+                          {paymentUpdating === d.id ? "…" : isPaid ? "✓ 入金済" : "未収"}
+                        </button>
+                      )}
+                      {d.pdf_url && (
+                        <a
+                          href={d.pdf_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block text-xs text-blue-600 hover:underline mt-1"
+                        >
+                          Drive
+                        </a>
+                      )}
+                    </div>
                   </div>
-                  </div>
+
                   {/* アクションボタン */}
                   <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5">
                     <button
@@ -303,11 +482,16 @@ export default function HistoryPage() {
                         → 見積書
                       </button>
                     )}
-                    {d.pdf_url && (
+                    {d.pdf_url ? (
+                      <button
+                        onClick={() => handleCopyAndMail(d, router)}
+                        className="text-xs px-2 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"
+                      >
+                        📋✉️ コピー＆メール
+                      </button>
+                    ) : (
                       <a
-                        href={`mailto:?subject=${encodeURIComponent(`${TYPE_LABEL[d.doc_type].label}（${d.doc_number}）_IZA株式会社`)}&body=${encodeURIComponent(
-                          `${d.recipient_name} ${d.recipient_honorific || "御中"}\n\nお世話になっております。IZA株式会社の高橋でございます。\n\n${TYPE_LABEL[d.doc_type].label}をお送りいたします。\n下記URLよりご確認ください。\n\n${d.pdf_url}\n\n何卒よろしくお願い申し上げます。\n\n--\nIZA株式会社\n高橋賢太朗\n〒180-0022 東京都武蔵野市境1-15-10 イストワール302\nTEL: 090-7542-9315\niza.japan2025@gmail.com`
-                        )}`}
+                        href={buildMailtoHref(d)}
                         className="text-xs px-2 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100"
                       >
                         ✉️ メール送信
@@ -317,7 +501,7 @@ export default function HistoryPage() {
                       onClick={() => handleDelete(d)}
                       className="text-xs px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 ml-auto"
                     >
-                      🗑️ 削除
+                      🗑️
                     </button>
                   </div>
                 </div>

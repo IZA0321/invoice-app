@@ -20,7 +20,29 @@ export interface DocumentRecord {
   remarks?: string | null;
   pdf_url?: string | null;
   drive_file_id?: string | null;
+  payment_status?: "unpaid" | "paid";
+  paid_at?: string | null;
   created_at?: string;
+}
+
+// Supabase migration required:
+// ALTER TABLE documents ADD COLUMN IF NOT EXISTS payment_status text DEFAULT 'unpaid';
+// ALTER TABLE documents ADD COLUMN IF NOT EXISTS paid_at date;
+
+export async function updatePaymentStatus(
+  id: string,
+  status: "paid" | "unpaid",
+  paidAt?: string
+): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase
+    .from("documents")
+    .update({
+      payment_status: status,
+      paid_at: status === "paid" ? (paidAt || new Date().toISOString().split("T")[0]) : null,
+    })
+    .eq("id", id);
+  if (error) throw error;
 }
 
 export async function deleteDocument(id: string): Promise<void> {

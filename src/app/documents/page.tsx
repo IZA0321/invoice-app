@@ -796,6 +796,22 @@ export default function DocumentApp() {
                 </div>
               </Card>
 
+              {/* インボイス登録番号未設定警告 */}
+              {docType === "invoice" && !company.registrationNo && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-start gap-2">
+                  <span className="text-amber-500 text-base leading-none mt-0.5">⚠️</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-amber-800">インボイス登録番号が未設定です</p>
+                    <p className="text-xs text-amber-700 mt-0.5">
+                      適格請求書として発行するには登録番号（T＋13桁）が必要です。
+                    </p>
+                    <p className="text-xs text-amber-600 mt-1">
+                      ↓「📋 発行者情報」を開いて設定し、「保存」してください。
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Currency */}
               <Card className="p-3">
                 <Label>通貨</Label>
