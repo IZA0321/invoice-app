@@ -182,7 +182,7 @@ export default function DocumentApp() {
   const [data, setData] = useState<DocData>(defaultData);
   const [company, setCompany] = useState<Company>(IZA_COMPANY);
   const [numberPrefix, setNumberPrefix] = useState("");
-  const [logo, setLogo] = useState<string | null>(null);
+  const [logo, setLogo] = useState<string | null>("/iza_logo.png");
   const [stamp, setStamp] = useState<string | null>("/iza_kakuin.svg");
   const [taxMode, setTaxMode] = useState<TaxMode>("inclusive");
   const [isProcessing, setIsProcessing] = useState(false);
