@@ -547,7 +547,15 @@ export default function DocumentApp() {
                 </h1>
                 <p className="text-xs text-slate-400">IZA株式会社</p>
               </div>
-              <button onClick={handlePrint} className="text-white p-2 rounded-full shadow-md transition-colors" style={{ background: config.color }} title="印刷 / PDF保存">
+              <button
+                onClick={() => {
+                  alert("印刷ダイアログが開いたら：\n「詳細設定」→「ヘッダーとフッター」のチェックを外してください。\n\n※ 外さないと書類に日付・URLが自動印刷されます。");
+                  handlePrint();
+                }}
+                className="text-white p-2 rounded-full shadow-md transition-colors"
+                style={{ background: config.color }}
+                title="印刷 / PDF保存"
+              >
                 <IconPrinter className="w-5 h-5" />
               </button>
             </div>
