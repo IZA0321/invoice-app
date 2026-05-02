@@ -3,7 +3,9 @@
  */
 
 const PARENT_FOLDER_ID = "10sI9KGIg-EVI86aAxo3SET1abOlfO4R0";
-const SCOPES = "https://www.googleapis.com/auth/drive.file";
+// drive スコープでユーザー作成フォルダも完全に検索・操作可能
+const SCOPES = "https://www.googleapis.com/auth/drive";
+const SCOPE_VERSION = "v2"; // スコープ変更時に古いトークンを無効化
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type GoogleGlobal = { accounts: { oauth2: { initTokenClient: (cfg: any) => any } } };
@@ -80,6 +82,17 @@ async function requestNewToken(clientId: string): Promise<string> {
 
 export async function ensureAuth(clientId: string): Promise<string> {
   if (accessToken) return accessToken;
+  const storedVersion = sessionStorage.getItem("izaGoogleScopeVersion");
+  if (storedVersion !== SCOPE_VERSION) {
+    sessionStorage.removeItem("izaGoogleToken");
+    sessionStorage.setItem("izaGoogleScopeVersion", SCOPE_VERSION);
+    // フォルダIDキャッシュもクリア（新スコープで再検索）
+    try {
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith("izaDriveFolder_")) localStorage.removeItem(k);
+      });
+    } catch {}
+  }
   const cached = sessionStorage.getItem("izaGoogleToken");
   if (cached) {
     accessToken = cached;
