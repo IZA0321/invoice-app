@@ -84,8 +84,11 @@ interface Company {
   email: string;
 }
 
+type Honorific = "御中" | "様";
+
 interface DocData {
   recipientName: string;
+  recipientHonorific: Honorific;
   subject: string;
   docNumber: string;
   issueDate: string;
@@ -168,7 +171,8 @@ export default function DocumentApp() {
   const today = new Date().toISOString().split("T")[0];
 
   const defaultData: DocData = {
-    recipientName: "", subject: "", docNumber: "",
+    recipientName: "", recipientHonorific: "御中",
+    subject: "", docNumber: "",
     issueDate: today, extraDate: today,
     paymentMethod: "", remarks: "",
     items: [{ id: Date.now(), name: "", quantity: 1, unitPrice: 0, taxCat: "10" }],
@@ -310,7 +314,7 @@ export default function DocumentApp() {
 
       const blob = await generatePdfBlob("preview-area");
       const dateStr = data.issueDate.replace(/-/g, "");
-      const fileName = `${dateStr}_${data.recipientName} 御中_${labels.title}.pdf`;
+      const fileName = `${dateStr}_${data.recipientName} ${data.recipientHonorific}_${labels.title}.pdf`;
       const folderName = docType === "receipt" ? "領収書" : docType === "invoice" ? "請求書" : "見積書";
       const result = await uploadPdfToDrive({
         clientId: GOOGLE_CLIENT_ID,
@@ -508,7 +512,7 @@ export default function DocumentApp() {
         <div className="flex justify-between items-start mb-8 pb-4" style={{ borderBottom: `3px solid ${config.color}` }}>
           <div>
             <h2 className="text-xs font-bold uppercase text-slate-500 mb-1">{isJa ? "宛名" : "Bill To"}</h2>
-            <div className="text-xl font-bold">{data.recipientName}{isJa && data.recipientName ? " 様" : ""}</div>
+            <div className="text-xl font-bold">{data.recipientName}{isJa && data.recipientName ? ` ${data.recipientHonorific}` : ""}</div>
           </div>
           <div className="text-right">
             <h1 className="text-4xl font-black tracking-tight mb-1" style={{ color: config.color }}>{l.title}</h1>
@@ -797,7 +801,26 @@ export default function DocumentApp() {
 
               {/* Basic Info */}
               <Collapsible title="📝 基本情報" accent={docType === "receipt" ? "border-l-4 border-l-emerald-500" : docType === "quotation" ? "border-l-4 border-l-amber-500" : "border-l-4 border-l-blue-500"}>
-                <div><Label>宛名</Label><Input value={data.recipientName} onChange={(e) => setData({ ...data, recipientName: e.target.value })} placeholder="例: 株式会社〇〇" /></div>
+                <div>
+                  <Label>宛名</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      className="flex-1"
+                      value={data.recipientName}
+                      onChange={(e) => setData({ ...data, recipientName: e.target.value })}
+                      placeholder="例: 株式会社〇〇"
+                    />
+                    <select
+                      value={data.recipientHonorific}
+                      onChange={(e) => setData({ ...data, recipientHonorific: e.target.value as Honorific })}
+                      className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    >
+                      <option value="御中">御中</option>
+                      <option value="様">様</option>
+                    </select>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">会社・組織は「御中」、個人は「様」</p>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>{labels.numberLabel}</Label><Input value={data.docNumber} onChange={(e) => setData({ ...data, docNumber: e.target.value })} placeholder="001" /></div>
                   <div><Label>{labels.dateLabel}</Label><Input type="date" value={data.issueDate} onChange={(e) => setData({ ...data, issueDate: e.target.value })} /></div>
