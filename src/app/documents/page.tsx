@@ -210,6 +210,18 @@ export default function DocumentApp() {
       if (savedTaxMode) setTaxMode(savedTaxMode as TaxMode);
       const savedBankInfo = localStorage.getItem("izaDocBank");
       if (savedBankInfo) setSavedBank(savedBankInfo);
+
+      // Drive関連のlocalStorageを一度だけクリア（フォルダ階層問題対応）
+      const driveResetVersion = "v3";
+      if (localStorage.getItem("izaDriveResetVersion") !== driveResetVersion) {
+        Object.keys(localStorage).forEach((k) => {
+          if (k.startsWith("izaDriveFolder_") || k === "izaDriveParent" || k === "izaGoogleToken") {
+            localStorage.removeItem(k);
+          }
+        });
+        sessionStorage.removeItem("izaGoogleToken");
+        localStorage.setItem("izaDriveResetVersion", driveResetVersion);
+      }
     } catch {}
   }, []);
 
