@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- 背景：濃紺グラデ -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- IZA -->
+  <text x="256" y="240" font-family="'Hiragino Sans','Yu Gothic',sans-serif" font-size="160" font-weight="900" fill="white" text-anchor="middle" letter-spacing="6">IZA</text>
+
+  <!-- 書類アイコン -->
+  <g transform="translate(176, 290)">
+    <rect x="0" y="0" width="160" height="180" rx="12" fill="white" opacity="0.95"/>
+    <line x1="24" y1="44" x2="136" y2="44" stroke="#1e3a8a" stroke-width="6" stroke-linecap="round"/>
+    <line x1="24" y1="80" x2="136" y2="80" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+    <line x1="24" y1="108" x2="136" y2="108" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+    <line x1="24" y1="136" x2="100" y2="136" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>
