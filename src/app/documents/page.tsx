@@ -336,9 +336,39 @@ export default function DocumentApp() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const result = ev.target?.result as string;
-      setter(result);
-      try { localStorage.setItem(storageKey, result); } catch {}
+      const original = ev.target?.result as string;
+      // 画像を最大400pxにリサイズしてlocalStorage節約
+      const img = new window.Image();
+      img.onload = () => {
+        const maxDim = 400;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          setter(original);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL("image/png");
+        setter(compressed);
+        try {
+          localStorage.setItem(storageKey, compressed);
+        } catch {
+          alert("画像を保存できませんでした。今回のセッションでのみ表示されます。");
+        }
+      };
+      img.onerror = () => {
+        setter(original);
+        try { localStorage.setItem(storageKey, original); } catch {}
+      };
+      img.src = original;
     };
     reader.readAsDataURL(file);
   };
