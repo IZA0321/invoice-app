@@ -137,9 +137,22 @@ async function createFolder(clientId: string, name: string, parentId: string): P
 
 export async function getOrCreateSubfolder(clientId: string, folderName: string): Promise<string> {
   if (folderIdCache[folderName]) return folderIdCache[folderName];
+
+  // localStorageから過去に作成したフォルダIDを取得
+  const storageKey = `izaDriveFolder_${folderName}`;
+  try {
+    const cached = localStorage.getItem(storageKey);
+    if (cached) {
+      folderIdCache[folderName] = cached;
+      return cached;
+    }
+  } catch {}
+
+  // 親フォルダ内を検索（drive.fileスコープでは見つからないことがある）
   let id = await findFolderByName(clientId, PARENT_FOLDER_ID, folderName);
   if (!id) id = await createFolder(clientId, folderName, PARENT_FOLDER_ID);
   folderIdCache[folderName] = id;
+  try { localStorage.setItem(storageKey, id); } catch {}
   return id;
 }
 
