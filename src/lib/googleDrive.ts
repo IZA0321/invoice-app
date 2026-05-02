@@ -2,10 +2,10 @@
  * Google Drive API クライアント（ブラウザOAuth）
  */
 
-const PARENT_FOLDER_ID = "10sI9KGIg-EVI86aAxo3SET1abOlfO4R0";
+const PARENT_FOLDER_NAME = "経理";
 // drive スコープでユーザー作成フォルダも完全に検索・操作可能
 const SCOPES = "https://www.googleapis.com/auth/drive";
-const SCOPE_VERSION = "v2"; // スコープ変更時に古いトークンを無効化
+const SCOPE_VERSION = "v3"; // スコープ変更時に古いトークンを無効化
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type GoogleGlobal = { accounts: { oauth2: { initTokenClient: (cfg: any) => any } } };
@@ -91,6 +91,7 @@ export async function ensureAuth(clientId: string): Promise<string> {
       Object.keys(localStorage).forEach((k) => {
         if (k.startsWith("izaDriveFolder_")) localStorage.removeItem(k);
       });
+      localStorage.removeItem("izaDriveParent");
     } catch {}
   }
   const cached = sessionStorage.getItem("izaGoogleToken");
@@ -148,10 +149,25 @@ async function createFolder(clientId: string, name: string, parentId: string): P
   return data.id;
 }
 
+async function getOrCreateParentFolder(clientId: string): Promise<string> {
+  if (folderIdCache["__parent__"]) return folderIdCache["__parent__"];
+  try {
+    const cached = localStorage.getItem("izaDriveParent");
+    if (cached) {
+      folderIdCache["__parent__"] = cached;
+      return cached;
+    }
+  } catch {}
+  let id = await findFolderByName(clientId, "root", PARENT_FOLDER_NAME);
+  if (!id) id = await createFolder(clientId, PARENT_FOLDER_NAME, "root");
+  folderIdCache["__parent__"] = id;
+  try { localStorage.setItem("izaDriveParent", id); } catch {}
+  return id;
+}
+
 export async function getOrCreateSubfolder(clientId: string, folderName: string): Promise<string> {
   if (folderIdCache[folderName]) return folderIdCache[folderName];
 
-  // localStorageから過去に作成したフォルダIDを取得
   const storageKey = `izaDriveFolder_${folderName}`;
   try {
     const cached = localStorage.getItem(storageKey);
@@ -161,9 +177,9 @@ export async function getOrCreateSubfolder(clientId: string, folderName: string)
     }
   } catch {}
 
-  // 親フォルダ内を検索（drive.fileスコープでは見つからないことがある）
-  let id = await findFolderByName(clientId, PARENT_FOLDER_ID, folderName);
-  if (!id) id = await createFolder(clientId, folderName, PARENT_FOLDER_ID);
+  const parentId = await getOrCreateParentFolder(clientId);
+  let id = await findFolderByName(clientId, parentId, folderName);
+  if (!id) id = await createFolder(clientId, folderName, parentId);
   folderIdCache[folderName] = id;
   try { localStorage.setItem(storageKey, id); } catch {}
   return id;
