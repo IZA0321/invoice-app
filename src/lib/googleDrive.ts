@@ -2,10 +2,14 @@
  * Google Drive API クライアント（ブラウザOAuth）
  */
 
-const PARENT_FOLDER_NAME = "経理";
-// drive スコープでユーザー作成フォルダも完全に検索・操作可能
-const SCOPES = "https://www.googleapis.com/auth/drive";
-const SCOPE_VERSION = "v3"; // スコープ変更時に古いトークンを無効化
+// 各書類タイプの固定フォルダID（経理フォルダ内のサブフォルダ）
+const FIXED_FOLDER_IDS: Record<string, string> = {
+  "領収書": "19PVh_2WVPlTi0pi0WfopZqYBpC1Tm4YT",
+  "請求書": "1FyHzhK7Y9znK-SCz9MJMHZ0MnhgQ_v4v",
+  "見積書": "1aT-fy4eWznnX7-Ermkk0z2Tj3CvXaYdg",
+};
+const SCOPES = "https://www.googleapis.com/auth/drive.file";
+const SCOPE_VERSION = "v4";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type GoogleGlobal = { accounts: { oauth2: { initTokenClient: (cfg: any) => any } } };
@@ -149,40 +153,10 @@ async function createFolder(clientId: string, name: string, parentId: string): P
   return data.id;
 }
 
-async function getOrCreateParentFolder(clientId: string): Promise<string> {
-  if (folderIdCache["__parent__"]) return folderIdCache["__parent__"];
-  try {
-    const cached = localStorage.getItem("izaDriveParent");
-    if (cached) {
-      folderIdCache["__parent__"] = cached;
-      return cached;
-    }
-  } catch {}
-  let id = await findFolderByName(clientId, "root", PARENT_FOLDER_NAME);
-  if (!id) id = await createFolder(clientId, PARENT_FOLDER_NAME, "root");
-  folderIdCache["__parent__"] = id;
-  try { localStorage.setItem("izaDriveParent", id); } catch {}
-  return id;
-}
-
-export async function getOrCreateSubfolder(clientId: string, folderName: string): Promise<string> {
-  if (folderIdCache[folderName]) return folderIdCache[folderName];
-
-  const storageKey = `izaDriveFolder_${folderName}`;
-  try {
-    const cached = localStorage.getItem(storageKey);
-    if (cached) {
-      folderIdCache[folderName] = cached;
-      return cached;
-    }
-  } catch {}
-
-  const parentId = await getOrCreateParentFolder(clientId);
-  let id = await findFolderByName(clientId, parentId, folderName);
-  if (!id) id = await createFolder(clientId, folderName, parentId);
-  folderIdCache[folderName] = id;
-  try { localStorage.setItem(storageKey, id); } catch {}
-  return id;
+export async function getOrCreateSubfolder(_clientId: string, folderName: string): Promise<string> {
+  const fixed = FIXED_FOLDER_IDS[folderName];
+  if (fixed) return fixed;
+  throw new Error(`未知のフォルダ種別: ${folderName}`);
 }
 
 export async function uploadPdfToDrive(opts: {
