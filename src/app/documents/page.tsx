@@ -1,6 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { generatePdfBlob } from "@/lib/pdfExport";
+import { uploadPdfToDrive } from "@/lib/googleDrive";
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
 // --- Icons ---
 const IconPrinter = ({ className }: { className?: string }) => (
@@ -276,6 +280,38 @@ export default function DocumentApp() {
     document.title = `${recipient}_${labels.title}_${effectivePrefix}-${num}`;
     window.print();
     setTimeout(() => { document.title = orig; }, 1000);
+  };
+
+  const [savingDrive, setSavingDrive] = useState(false);
+
+  const handleSaveToDrive = async () => {
+    if (!GOOGLE_CLIENT_ID) {
+      alert("Google Client ID が設定されていません。\n環境変数 NEXT_PUBLIC_GOOGLE_CLIENT_ID をVercelで設定してください。");
+      return;
+    }
+    if (!data.recipientName) {
+      alert("宛名を入力してください");
+      return;
+    }
+    setSavingDrive(true);
+    try {
+      const blob = await generatePdfBlob("preview-area");
+      const dateStr = data.issueDate.replace(/-/g, "");
+      const fileName = `${dateStr}_${data.recipientName} 御中_${labels.title}.pdf`;
+      const folderName = docType === "receipt" ? "領収書" : docType === "invoice" ? "請求書" : "見積書";
+      const result = await uploadPdfToDrive({
+        clientId: GOOGLE_CLIENT_ID,
+        pdfBlob: blob,
+        fileName,
+        folderName,
+      });
+      alert(`Google Driveに保存しました\n\nファイル名: ${fileName}\n\n表示: ${result.webViewLink}`);
+    } catch (err) {
+      console.error(err);
+      alert(`保存に失敗しました: ${err instanceof Error ? err.message : "不明なエラー"}`);
+    } finally {
+      setSavingDrive(false);
+    }
   };
 
   const handleAddItem = () => {
@@ -577,17 +613,38 @@ export default function DocumentApp() {
                 </h1>
                 <p className="text-xs text-slate-400">IZA株式会社</p>
               </div>
-              <button
-                onClick={() => {
-                  alert("印刷ダイアログが開いたら：\n「詳細設定」→「ヘッダーとフッター」のチェックを外してください。\n\n※ 外さないと書類に日付・URLが自動印刷されます。");
-                  handlePrint();
-                }}
-                className="text-white p-2 rounded-full shadow-md transition-colors"
-                style={{ background: config.color }}
-                title="印刷 / PDF保存"
-              >
-                <IconPrinter className="w-5 h-5" />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveToDrive}
+                  disabled={savingDrive}
+                  className="text-white px-3 py-2 rounded-full shadow-md transition-colors flex items-center gap-1.5 text-xs font-bold disabled:opacity-50"
+                  style={{ background: "#1a73e8" }}
+                  title="Google Driveに保存"
+                >
+                  {savingDrive ? <IconLoader2 className="w-4 h-4 animate-spin" /> : (
+                    <svg width="16" height="16" viewBox="0 0 87.3 78" fill="none">
+                      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                      <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                      <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                      <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                      <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                    </svg>
+                  )}
+                  Drive保存
+                </button>
+                <button
+                  onClick={() => {
+                    alert("印刷ダイアログが開いたら：\n「詳細設定」→「ヘッダーとフッター」のチェックを外してください。");
+                    handlePrint();
+                  }}
+                  className="text-white p-2 rounded-full shadow-md transition-colors"
+                  style={{ background: config.color }}
+                  title="印刷 / PDF保存"
+                >
+                  <IconPrinter className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4">
