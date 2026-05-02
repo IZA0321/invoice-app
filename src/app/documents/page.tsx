@@ -210,15 +210,12 @@ export default function DocumentApp() {
   // 書類種別切替時にデフォルト値を自動セット
   useEffect(() => {
     setData((prev) => {
-      if (docType === "invoice") {
+      if (docType === "invoice" || docType === "receipt") {
         return {
           ...prev,
           paymentMethod: prev.paymentMethod || "銀行振込",
           remarks: prev.remarks || savedBank,
         };
-      }
-      if (docType === "receipt") {
-        return { ...prev, paymentMethod: prev.paymentMethod || "現金" };
       }
       return prev;
     });
