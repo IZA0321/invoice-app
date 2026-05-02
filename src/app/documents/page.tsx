@@ -207,16 +207,22 @@ export default function DocumentApp() {
     } catch {}
   }, []);
 
-  // 書類種別切替時に振込先を自動セット
+  // 書類種別切替時にデフォルト値を自動セット
   useEffect(() => {
-    if (docType === "invoice") {
-      setData((prev) => ({
-        ...prev,
-        paymentMethod: prev.paymentMethod || "銀行振込",
-        remarks: prev.remarks || savedBank,
-      }));
-    }
-  }, [docType]);
+    setData((prev) => {
+      if (docType === "invoice") {
+        return {
+          ...prev,
+          paymentMethod: prev.paymentMethod || "銀行振込",
+          remarks: prev.remarks || savedBank,
+        };
+      }
+      if (docType === "receipt") {
+        return { ...prev, paymentMethod: prev.paymentMethod || "現金" };
+      }
+      return prev;
+    });
+  }, [docType, savedBank]);
 
   const saveCompany = () => {
     try {
