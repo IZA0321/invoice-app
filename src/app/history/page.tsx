@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { listDocuments, DocumentRecord, supabase } from "@/lib/supabase";
 
 type Filter = "all" | "receipt" | "invoice" | "quotation";
+type DocType = "receipt" | "invoice" | "quotation";
 
 const TYPE_LABEL: Record<string, { label: string; color: string }> = {
   receipt: { label: "領収書", color: "#10b981" },
@@ -12,7 +14,22 @@ const TYPE_LABEL: Record<string, { label: string; color: string }> = {
   quotation: { label: "見積書", color: "#f59e0b" },
 };
 
+function prefillAndNavigate(d: DocumentRecord, newType: DocType, router: ReturnType<typeof useRouter>) {
+  const prefill = {
+    docType: newType,
+    recipientName: d.recipient_name,
+    recipientHonorific: d.recipient_honorific || "御中",
+    subject: d.subject || "",
+    paymentMethod: d.payment_method || "",
+    remarks: d.remarks || "",
+    items: d.items || [],
+  };
+  sessionStorage.setItem("izaPrefill", JSON.stringify(prefill));
+  router.push("/documents");
+}
+
 export default function HistoryPage() {
+  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [docs, setDocs] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,23 +124,24 @@ export default function HistoryPage() {
               return (
                 <div
                   key={d.id}
-                  className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-3"
+                  className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm"
                 >
-                  <span
-                    className="text-white text-xs font-bold px-2 py-1 rounded shrink-0"
-                    style={{ background: t.color }}
-                  >
-                    {t.label}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">
-                      {d.recipient_name} 御中
-                    </p>
-                    <p className="text-xs text-slate-500 truncate">
-                      {d.subject || "（件名なし）"} · {d.doc_number}
-                    </p>
-                    <p className="text-xs text-slate-400">{d.issue_date}</p>
-                  </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="text-white text-xs font-bold px-2 py-1 rounded shrink-0"
+                      style={{ background: t.color }}
+                    >
+                      {t.label}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">
+                        {d.recipient_name} {d.recipient_honorific || "御中"}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {d.subject || "（件名なし）"} · {d.doc_number}
+                      </p>
+                      <p className="text-xs text-slate-400">{d.issue_date}</p>
+                    </div>
                   <div className="text-right shrink-0">
                     <p className="font-bold text-slate-800 text-sm">
                       ¥{d.total_amount.toLocaleString()}
@@ -137,6 +155,40 @@ export default function HistoryPage() {
                       >
                         Drive
                       </a>
+                    )}
+                  </div>
+                  </div>
+                  {/* アクションボタン */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => prefillAndNavigate(d, d.doc_type as DocType, router)}
+                      className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
+                    >
+                      📋 コピー
+                    </button>
+                    {d.doc_type !== "receipt" && (
+                      <button
+                        onClick={() => prefillAndNavigate(d, "receipt", router)}
+                        className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100"
+                      >
+                        → 領収書
+                      </button>
+                    )}
+                    {d.doc_type !== "invoice" && (
+                      <button
+                        onClick={() => prefillAndNavigate(d, "invoice", router)}
+                        className="text-xs px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100"
+                      >
+                        → 請求書
+                      </button>
+                    )}
+                    {d.doc_type !== "quotation" && (
+                      <button
+                        onClick={() => prefillAndNavigate(d, "quotation", router)}
+                        className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100"
+                      >
+                        → 見積書
+                      </button>
                     )}
                   </div>
                 </div>

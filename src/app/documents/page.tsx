@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { generatePdfBlob } from "@/lib/pdfExport";
 import { uploadPdfToDrive } from "@/lib/googleDrive";
-import { getNextDocNumber, saveDocumentRecord } from "@/lib/supabase";
+import { getNextDocNumber, saveDocumentRecord, getRecentCustomers } from "@/lib/supabase";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
@@ -194,6 +194,20 @@ export default function DocumentApp() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [savedBank, setSavedBank] = useState(IZA_DEFAULT_BANK);
+  const [customers, setCustomers] = useState<{ name: string; honorific: string; lastSubject: string }[]>([]);
+
+  useEffect(() => {
+    getRecentCustomers(20).then(setCustomers);
+  }, []);
+
+  const applyCustomer = (c: { name: string; honorific: string; lastSubject: string }) => {
+    setData((prev) => ({
+      ...prev,
+      recipientName: c.name,
+      recipientHonorific: (c.honorific === "様" ? "様" : "御中"),
+      subject: prev.subject || c.lastSubject,
+    }));
+  };
 
   useEffect(() => {
     try {
@@ -221,6 +235,28 @@ export default function DocumentApp() {
         });
         sessionStorage.removeItem("izaGoogleToken");
         localStorage.setItem("izaDriveResetVersion", driveResetVersion);
+      }
+    } catch {}
+  }, []);
+
+  // sessionStorageからプリフィル情報を読み込み（コピー or 種別変換）
+  useEffect(() => {
+    try {
+      const prefillStr = sessionStorage.getItem("izaPrefill");
+      if (prefillStr) {
+        const prefill = JSON.parse(prefillStr);
+        sessionStorage.removeItem("izaPrefill");
+        if (prefill.docType) setDocType(prefill.docType);
+        setData((prev) => ({
+          ...prev,
+          recipientName: prefill.recipientName ?? prev.recipientName,
+          recipientHonorific: prefill.recipientHonorific ?? prev.recipientHonorific,
+          subject: prefill.subject ?? prev.subject,
+          paymentMethod: prefill.paymentMethod ?? prev.paymentMethod,
+          remarks: prefill.remarks ?? prev.remarks,
+          items: prefill.items && prefill.items.length > 0 ? prefill.items.map((it: Item) => ({ ...it, id: Date.now() + Math.random() })) : prev.items,
+          docNumber: "", // 新規採番
+        }));
       }
     } catch {}
   }, []);
@@ -335,15 +371,19 @@ export default function DocumentApp() {
         folderName,
       });
 
-      // Supabaseに履歴記録
+      // Supabaseに履歴記録（完全な情報）
       try {
         await saveDocumentRecord({
           doc_type: docType,
           doc_number: docNumber,
           recipient_name: data.recipientName,
+          recipient_honorific: data.recipientHonorific,
           subject: data.subject || null,
           issue_date: data.issueDate,
           total_amount: totalAmount,
+          items: data.items,
+          payment_method: data.paymentMethod || null,
+          remarks: data.remarks || null,
           pdf_url: result.webViewLink,
           drive_file_id: result.id,
         });
@@ -813,6 +853,22 @@ export default function DocumentApp() {
 
               {/* Basic Info */}
               <Collapsible title="📝 基本情報" accent={docType === "receipt" ? "border-l-4 border-l-emerald-500" : docType === "quotation" ? "border-l-4 border-l-amber-500" : "border-l-4 border-l-blue-500"}>
+                {customers.length > 0 && (
+                  <div>
+                    <Label>👥 最近の取引先（タップで入力）</Label>
+                    <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                      {customers.map((c) => (
+                        <button
+                          key={c.name}
+                          onClick={() => applyCustomer(c)}
+                          className="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full hover:bg-blue-100 transition-colors"
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div>
                   <Label>宛名</Label>
                   <div className="flex gap-2">

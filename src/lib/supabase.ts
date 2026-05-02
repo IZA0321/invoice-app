@@ -10,12 +10,40 @@ export interface DocumentRecord {
   doc_type: "receipt" | "invoice" | "quotation";
   doc_number: string;
   recipient_name: string;
+  recipient_honorific?: string;
   subject: string | null;
   issue_date: string;
   total_amount: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  items?: any[] | null;
+  payment_method?: string | null;
+  remarks?: string | null;
   pdf_url?: string | null;
   drive_file_id?: string | null;
   created_at?: string;
+}
+
+export async function getRecentCustomers(limit = 30): Promise<{ name: string; honorific: string; lastSubject: string }[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("documents")
+    .select("recipient_name, recipient_honorific, subject, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error || !data) return [];
+  const seen = new Set<string>();
+  const customers: { name: string; honorific: string; lastSubject: string }[] = [];
+  for (const d of data) {
+    if (!d.recipient_name || seen.has(d.recipient_name)) continue;
+    seen.add(d.recipient_name);
+    customers.push({
+      name: d.recipient_name,
+      honorific: d.recipient_honorific || "御中",
+      lastSubject: d.subject || "",
+    });
+    if (customers.length >= limit) break;
+  }
+  return customers;
 }
 
 /**
