@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { generatePdfBlob } from "@/lib/pdfExport";
 import { uploadPdfToDrive } from "@/lib/googleDrive";
+import { getNextDocNumber, saveDocumentRecord } from "@/lib/supabase";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
@@ -298,6 +300,14 @@ export default function DocumentApp() {
     }
     setSavingDrive(true);
     try {
+      // 採番（未入力なら自動採番）
+      let docNumber = data.docNumber;
+      if (!docNumber) {
+        const fullNumber = await getNextDocNumber(docType);
+        docNumber = fullNumber;
+        setData((prev) => ({ ...prev, docNumber: fullNumber }));
+      }
+
       const blob = await generatePdfBlob("preview-area");
       const dateStr = data.issueDate.replace(/-/g, "");
       const fileName = `${dateStr}_${data.recipientName} 御中_${labels.title}.pdf`;
@@ -308,6 +318,23 @@ export default function DocumentApp() {
         fileName,
         folderName,
       });
+
+      // Supabaseに履歴記録
+      try {
+        await saveDocumentRecord({
+          doc_type: docType,
+          doc_number: docNumber,
+          recipient_name: data.recipientName,
+          subject: data.subject || null,
+          issue_date: data.issueDate,
+          total_amount: totalAmount,
+          pdf_url: result.webViewLink,
+          drive_file_id: result.id,
+        });
+      } catch (e) {
+        console.warn("履歴の記録に失敗:", e);
+      }
+
       alert(`Google Driveに保存しました\n\nファイル名: ${fileName}\n\n表示: ${result.webViewLink}`);
     } catch (err) {
       console.error(err);
@@ -644,7 +671,9 @@ export default function DocumentApp() {
                 <h1 className="text-lg font-bold flex items-center gap-2" style={{ color: config.color }}>
                   <IconFileText className="w-5 h-5" />IZA 書類作成
                 </h1>
-                <p className="text-xs text-slate-400">IZA株式会社</p>
+                <Link href="/history" className="text-xs text-blue-600 hover:underline">
+                  📚 書類履歴を見る →
+                </Link>
               </div>
               <div className="flex gap-2">
                 <button
