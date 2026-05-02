@@ -169,16 +169,21 @@ export default function DocumentApp() {
     totalAmountOverride: 0,
   };
 
+  // IZAデフォルト振込先
+  const IZA_DEFAULT_BANK =
+    "三井住友銀行\n支店名：トランクNORTH支店\n店番：403\n科目：普通\n口座番号：0381466\n口座名義：IZA株式会社\n口座名義カナ：イザ（カ";
+
   const [docType, setDocType] = useState<DocType>("receipt");
   const [lang, setLang] = useState<Lang>("ja");
   const [data, setData] = useState<DocData>(defaultData);
   const [company, setCompany] = useState<Company>(IZA_COMPANY);
   const [numberPrefix, setNumberPrefix] = useState("");
   const [logo, setLogo] = useState<string | null>(null);
-  const [stamp, setStamp] = useState<string | null>(null);
+  const [stamp, setStamp] = useState<string | null>("/iza_kakuin.svg");
   const [taxMode, setTaxMode] = useState<TaxMode>("inclusive");
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [savedBank, setSavedBank] = useState(IZA_DEFAULT_BANK);
 
   useEffect(() => {
     try {
@@ -193,8 +198,21 @@ export default function DocumentApp() {
       if (savedPrefix) setNumberPrefix(savedPrefix);
       const savedTaxMode = localStorage.getItem("izaDocTaxMode");
       if (savedTaxMode) setTaxMode(savedTaxMode as TaxMode);
+      const savedBankInfo = localStorage.getItem("izaDocBank");
+      if (savedBankInfo) setSavedBank(savedBankInfo);
     } catch {}
   }, []);
+
+  // 書類種別切替時に振込先を自動セット
+  useEffect(() => {
+    if (docType === "invoice") {
+      setData((prev) => ({
+        ...prev,
+        paymentMethod: prev.paymentMethod || "銀行振込",
+        remarks: prev.remarks || savedBank,
+      }));
+    }
+  }, [docType]);
 
   const saveCompany = () => {
     try {
@@ -203,6 +221,18 @@ export default function DocumentApp() {
       localStorage.setItem("izaDocTaxMode", taxMode);
       alert("会社情報を保存しました");
     } catch { alert("保存に失敗しました"); }
+  };
+
+  const saveBank = () => {
+    try {
+      localStorage.setItem("izaDocBank", data.remarks);
+      setSavedBank(data.remarks);
+      alert("振込先情報を保存しました");
+    } catch { alert("保存に失敗しました"); }
+  };
+
+  const applyBank = () => {
+    setData((prev) => ({ ...prev, remarks: savedBank, paymentMethod: "銀行振込" }));
   };
 
   const config = DOC_TYPES[docType];
@@ -682,9 +712,27 @@ export default function DocumentApp() {
                   </div>
                 )}
                 <div>
-                  <Label>備考（自由入力）</Label>
-                  <Textarea rows={4} value={data.remarks} onChange={(e) => setData({ ...data, remarks: e.target.value })}
-                    placeholder={docType === "invoice" ? "振込先情報\n例: 三菱UFJ銀行 ○○支店 普通 1234567" : docType === "quotation" ? "条件・特記事項" : "備考欄"} />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Label className="mb-0">{docType === "invoice" ? "振込先・備考" : "備考"}</Label>
+                    {docType === "invoice" && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={applyBank}
+                          className="text-xs px-2 py-1 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                        >
+                          保存済みを入力
+                        </button>
+                        <button
+                          onClick={saveBank}
+                          className="text-xs px-2 py-1 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors"
+                        >
+                          この内容を保存
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <Textarea rows={5} value={data.remarks} onChange={(e) => setData({ ...data, remarks: e.target.value })}
+                    placeholder={docType === "invoice" ? "振込先情報が自動入力されます" : docType === "quotation" ? "条件・特記事項" : "備考欄"} />
                 </div>
               </Collapsible>
 
