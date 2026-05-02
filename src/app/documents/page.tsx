@@ -85,6 +85,13 @@ interface Company {
 }
 
 type Honorific = "御中" | "様";
+type Currency = "JPY" | "USD" | "EUR";
+
+const CURRENCY_SYMBOLS: Record<Currency, string> = {
+  JPY: "¥",
+  USD: "$",
+  EUR: "€",
+};
 
 interface DocData {
   recipientName: string;
@@ -97,6 +104,7 @@ interface DocData {
   remarks: string;
   items: Item[];
   totalAmountOverride: number;
+  currency: Currency;
 }
 
 // --- IZA Default Company ---
@@ -177,6 +185,7 @@ export default function DocumentApp() {
     paymentMethod: "", remarks: "",
     items: [{ id: Date.now(), name: "", quantity: 1, unitPrice: 0, taxCat: "10" }],
     totalAmountOverride: 0,
+    currency: "JPY",
   };
 
   // IZAデフォルト振込先
@@ -299,7 +308,11 @@ export default function DocumentApp() {
   const config = DOC_TYPES[docType];
   const labels = config[lang];
   const effectivePrefix = numberPrefix || config.prefix;
-  const formatCurrency = (n: number) => `¥${Math.round(n || 0).toLocaleString()}`;
+  const symbol = CURRENCY_SYMBOLS[data.currency];
+  const formatCurrency = (n: number) => {
+    const num = data.currency === "JPY" ? Math.round(n || 0) : Number((n || 0).toFixed(2));
+    return `${symbol}${num.toLocaleString(undefined, { minimumFractionDigits: data.currency === "JPY" ? 0 : 2, maximumFractionDigits: 2 })}`;
+  };
 
   const taxCalc = useMemo(() => {
     let taxable10 = 0, taxable8 = 0, tax10 = 0, tax8 = 0, nonTaxable = 0, subTotalBeforeTax = 0;
@@ -605,9 +618,9 @@ export default function DocumentApp() {
                   <tr key={idx}>
                     <td className="py-2.5 px-3 text-sm">{item.name}</td>
                     <td className="py-2.5 px-3 text-sm text-center">{item.quantity}</td>
-                    <td className="py-2.5 px-3 text-sm text-right">{item.unitPrice.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-sm text-right">{formatCurrency(item.unitPrice)}</td>
                     <td className="py-2.5 px-3 text-xs text-center text-slate-500">{catLabel}</td>
-                    <td className="py-2.5 px-3 text-sm text-right font-medium">{lineAmt.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-sm text-right font-medium">{formatCurrency(lineAmt)}</td>
                   </tr>
                 );
               })}
@@ -783,6 +796,22 @@ export default function DocumentApp() {
                 </div>
               </Card>
 
+              {/* Currency */}
+              <Card className="p-3">
+                <Label>通貨</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["JPY", "USD", "EUR"] as Currency[]).map((cur) => (
+                    <button
+                      key={cur}
+                      onClick={() => setData({ ...data, currency: cur })}
+                      className={`py-2 text-xs font-bold rounded-lg transition-all ${data.currency === cur ? "bg-slate-800 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+                    >
+                      {CURRENCY_SYMBOLS[cur]} {cur}
+                    </button>
+                  ))}
+                </div>
+              </Card>
+
               {/* Tax Mode */}
               <Card className="p-3">
                 <Label>税計算方式</Label>
@@ -893,7 +922,26 @@ export default function DocumentApp() {
                   <div><Label>{labels.numberLabel}</Label><Input value={data.docNumber} onChange={(e) => setData({ ...data, docNumber: e.target.value })} placeholder="001" /></div>
                   <div><Label>{labels.dateLabel}</Label><Input type="date" value={data.issueDate} onChange={(e) => setData({ ...data, issueDate: e.target.value })} /></div>
                 </div>
-                <div><Label>{labels.extraDateLabel}</Label><Input type="date" value={data.extraDate} onChange={(e) => setData({ ...data, extraDate: e.target.value })} /></div>
+                <div>
+                  <Label>{labels.extraDateLabel}</Label>
+                  <Input type="date" value={data.extraDate} onChange={(e) => setData({ ...data, extraDate: e.target.value })} />
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {[
+                      { label: "今月末", fn: () => { const d = new Date(data.issueDate); d.setMonth(d.getMonth() + 1, 0); return d.toISOString().split("T")[0]; } },
+                      { label: "翌月末", fn: () => { const d = new Date(data.issueDate); d.setMonth(d.getMonth() + 2, 0); return d.toISOString().split("T")[0]; } },
+                      { label: "30日後", fn: () => { const d = new Date(data.issueDate); d.setDate(d.getDate() + 30); return d.toISOString().split("T")[0]; } },
+                      { label: "60日後", fn: () => { const d = new Date(data.issueDate); d.setDate(d.getDate() + 60); return d.toISOString().split("T")[0]; } },
+                    ].map((opt) => (
+                      <button
+                        key={opt.label}
+                        onClick={() => setData({ ...data, extraDate: opt.fn() })}
+                        className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded hover:bg-slate-200"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div><Label>件名</Label><Input value={data.subject} onChange={(e) => setData({ ...data, subject: e.target.value })} placeholder="例: コンサルティング料" /></div>
                 <div>
                   <Label>合計金額 手動上書き（任意）</Label>
@@ -976,9 +1024,9 @@ export default function DocumentApp() {
                         </div>
                       </div>
                       <div className="mt-1.5 text-right text-xs text-slate-400">
-                        小計: ¥{(item.unitPrice * item.quantity).toLocaleString()}
+                        小計: {formatCurrency(item.unitPrice * item.quantity)}
                         {item.taxCat !== "0" && taxMode === "exclusive" && (
-                          <span className="ml-2">+ 税 ¥{Math.round(item.unitPrice * item.quantity * TAX_CATS[item.taxCat || "10"].rate).toLocaleString()}</span>
+                          <span className="ml-2">+ 税 {formatCurrency(item.unitPrice * item.quantity * TAX_CATS[item.taxCat || "10"].rate)}</span>
                         )}
                       </div>
                     </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { listDocuments, DocumentRecord, supabase } from "@/lib/supabase";
+import { listDocuments, DocumentRecord, supabase, deleteDocument, getMonthlySummary, MonthlySummary } from "@/lib/supabase";
 
 type Filter = "all" | "receipt" | "invoice" | "quotation";
 type DocType = "receipt" | "invoice" | "quotation";
@@ -34,6 +34,26 @@ export default function HistoryPage() {
   const [docs, setDocs] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [showSummary, setShowSummary] = useState(false);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [summary, setSummary] = useState<MonthlySummary[]>([]);
+
+  useEffect(() => {
+    if (showSummary) {
+      getMonthlySummary(year).then(setSummary);
+    }
+  }, [showSummary, year]);
+
+  const handleDelete = async (d: DocumentRecord) => {
+    if (!d.id) return;
+    if (!confirm(`「${d.recipient_name}」の${TYPE_LABEL[d.doc_type].label}（${d.doc_number}）を削除しますか？\n\n※Google Drive上のPDFは削除されません。`)) return;
+    try {
+      await deleteDocument(d.id);
+      setDocs((prev) => prev.filter((x) => x.id !== d.id));
+    } catch (e) {
+      alert("削除に失敗しました: " + (e instanceof Error ? e.message : "不明なエラー"));
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -73,6 +93,99 @@ export default function HistoryPage() {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+        {/* Monthly Summary Toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSummary((v) => !v)}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+              showSummary ? "bg-purple-600 text-white" : "bg-white text-purple-700 border border-purple-200"
+            }`}
+          >
+            📊 月次集計を{showSummary ? "閉じる" : "見る"}
+          </button>
+          {showSummary && (
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+            >
+              {[year + 1, year, year - 1, year - 2].map((y) => (
+                <option key={y} value={y}>{y}年</option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {/* Monthly Summary */}
+        {showSummary && (
+          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-700 mb-3">{year}年 月次集計</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="p-2 text-left font-semibold text-slate-500">月</th>
+                    <th className="p-2 text-right font-semibold text-emerald-600">領収書</th>
+                    <th className="p-2 text-right font-semibold text-blue-600">請求書</th>
+                    <th className="p-2 text-right font-semibold text-amber-600">見積書</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.map((s) => {
+                    const total = s.receipt_count + s.invoice_count + s.quotation_count;
+                    return (
+                      <tr key={s.month} className={`border-t border-slate-100 ${total === 0 ? "text-slate-300" : ""}`}>
+                        <td className="p-2 font-semibold">{Number(s.month.slice(5))}月</td>
+                        <td className="p-2 text-right">
+                          {s.receipt_count > 0 ? (
+                            <>
+                              <div>{s.receipt_count}件</div>
+                              <div className="text-slate-400">¥{s.receipt_total.toLocaleString()}</div>
+                            </>
+                          ) : "—"}
+                        </td>
+                        <td className="p-2 text-right">
+                          {s.invoice_count > 0 ? (
+                            <>
+                              <div>{s.invoice_count}件</div>
+                              <div className="text-slate-400">¥{s.invoice_total.toLocaleString()}</div>
+                            </>
+                          ) : "—"}
+                        </td>
+                        <td className="p-2 text-right">
+                          {s.quotation_count > 0 ? (
+                            <>
+                              <div>{s.quotation_count}件</div>
+                              <div className="text-slate-400">¥{s.quotation_total.toLocaleString()}</div>
+                            </>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-slate-50 font-bold">
+                  <tr>
+                    <td className="p-2">合計</td>
+                    <td className="p-2 text-right text-emerald-600">
+                      {summary.reduce((s, m) => s + m.receipt_count, 0)}件<br/>
+                      <span className="text-xs">¥{summary.reduce((s, m) => s + m.receipt_total, 0).toLocaleString()}</span>
+                    </td>
+                    <td className="p-2 text-right text-blue-600">
+                      {summary.reduce((s, m) => s + m.invoice_count, 0)}件<br/>
+                      <span className="text-xs">¥{summary.reduce((s, m) => s + m.invoice_total, 0).toLocaleString()}</span>
+                    </td>
+                    <td className="p-2 text-right text-amber-600">
+                      {summary.reduce((s, m) => s + m.quotation_count, 0)}件<br/>
+                      <span className="text-xs">¥{summary.reduce((s, m) => s + m.quotation_total, 0).toLocaleString()}</span>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Filter */}
         <div className="grid grid-cols-4 gap-2">
           {(["all", "receipt", "invoice", "quotation"] as Filter[]).map((f) => (
@@ -190,6 +303,22 @@ export default function HistoryPage() {
                         → 見積書
                       </button>
                     )}
+                    {d.pdf_url && (
+                      <a
+                        href={`mailto:?subject=${encodeURIComponent(`${TYPE_LABEL[d.doc_type].label}（${d.doc_number}）_IZA株式会社`)}&body=${encodeURIComponent(
+                          `${d.recipient_name} ${d.recipient_honorific || "御中"}\n\nお世話になっております。IZA株式会社の高橋でございます。\n\n${TYPE_LABEL[d.doc_type].label}をお送りいたします。\n下記URLよりご確認ください。\n\n${d.pdf_url}\n\n何卒よろしくお願い申し上げます。\n\n--\nIZA株式会社\n高橋賢太朗\n〒180-0022 東京都武蔵野市境1-15-10 イストワール302\nTEL: 090-7542-9315\niza.japan2025@gmail.com`
+                        )}`}
+                        className="text-xs px-2 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100"
+                      >
+                        ✉️ メール送信
+                      </a>
+                    )}
+                    <button
+                      onClick={() => handleDelete(d)}
+                      className="text-xs px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 ml-auto"
+                    >
+                      🗑️ 削除
+                    </button>
                   </div>
                 </div>
               );

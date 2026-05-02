@@ -23,6 +23,60 @@ export interface DocumentRecord {
   created_at?: string;
 }
 
+export async function deleteDocument(id: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("documents").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export interface MonthlySummary {
+  month: string;
+  receipt_count: number;
+  receipt_total: number;
+  invoice_count: number;
+  invoice_total: number;
+  quotation_count: number;
+  quotation_total: number;
+}
+
+export async function getMonthlySummary(year: number): Promise<MonthlySummary[]> {
+  if (!supabase) return [];
+  const start = `${year}-01-01`;
+  const end = `${year + 1}-01-01`;
+  const { data, error } = await supabase
+    .from("documents")
+    .select("doc_type, total_amount, issue_date")
+    .gte("issue_date", start)
+    .lt("issue_date", end);
+  if (error || !data) return [];
+
+  const byMonth: Record<string, MonthlySummary> = {};
+  for (let m = 1; m <= 12; m++) {
+    const key = `${year}-${String(m).padStart(2, "0")}`;
+    byMonth[key] = {
+      month: key,
+      receipt_count: 0, receipt_total: 0,
+      invoice_count: 0, invoice_total: 0,
+      quotation_count: 0, quotation_total: 0,
+    };
+  }
+  for (const d of data) {
+    const month = d.issue_date.slice(0, 7);
+    if (!byMonth[month]) continue;
+    if (d.doc_type === "receipt") {
+      byMonth[month].receipt_count++;
+      byMonth[month].receipt_total += d.total_amount;
+    } else if (d.doc_type === "invoice") {
+      byMonth[month].invoice_count++;
+      byMonth[month].invoice_total += d.total_amount;
+    } else if (d.doc_type === "quotation") {
+      byMonth[month].quotation_count++;
+      byMonth[month].quotation_total += d.total_amount;
+    }
+  }
+  return Object.values(byMonth);
+}
+
 export async function getRecentCustomers(limit = 30): Promise<{ name: string; honorific: string; lastSubject: string }[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
