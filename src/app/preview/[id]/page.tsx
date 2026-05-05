@@ -28,11 +28,22 @@ const TAX_CATS: Record<string, { label: string; rate: number }> = {
   "0":  { label: "非課税", rate: 0 },
 };
 
-interface Item { name: string; quantity: number; unitPrice: number; taxCat: string }
+// LINE botは description/unit_price 形式、webアプリは name/unitPrice 形式
+interface Item { name?: string; description?: string; quantity: number; unitPrice?: number; unit_price?: number; taxCat?: string }
+
+function normalizeItem(it: Item) {
+  return {
+    name: it.name || it.description || "",
+    quantity: it.quantity ?? 1,
+    unitPrice: it.unitPrice ?? it.unit_price ?? 0,
+    taxCat: it.taxCat ?? "10",
+  };
+}
 
 function calcTax(items: Item[]) {
   let taxable10 = 0, taxable8 = 0, tax10 = 0, tax8 = 0, nonTaxable = 0;
-  for (const it of items) {
+  for (const raw of items) {
+    const it = normalizeItem(raw);
     const line = it.unitPrice * it.quantity;
     const cat = it.taxCat || "10";
     const rate = TAX_CATS[cat]?.rate ?? 0.1;
@@ -196,7 +207,9 @@ export default function PreviewPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {items.length > 0 ? items.map((it, idx) => (
+                  {items.length > 0 ? items.map((raw, idx) => {
+                    const it = normalizeItem(raw);
+                    return (
                     <tr key={idx}>
                       <td className="py-2.5 px-3 text-sm">{it.name}</td>
                       <td className="py-2.5 px-3 text-sm text-center">{it.quantity}</td>
@@ -204,7 +217,8 @@ export default function PreviewPage() {
                       <td className="py-2.5 px-3 text-xs text-center text-slate-500">{TAX_CATS[it.taxCat]?.label || it.taxCat}</td>
                       <td className="py-2.5 px-3 text-sm text-right font-medium">{fmt(it.unitPrice * it.quantity)}</td>
                     </tr>
-                  )) : (
+                    );
+                  }) : (
                     <tr><td colSpan={5} className="py-4 text-center text-xs text-slate-400">明細なし</td></tr>
                   )}
                 </tbody>
