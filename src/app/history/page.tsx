@@ -538,6 +538,11 @@ export default function HistoryPage() {
 
                   {/* アクション */}
                   <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5">
+                    {d.id && (
+                      <Link href={`/preview/${d.id}`} className="text-xs px-2 py-1 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-semibold">
+                        👁️ プレビュー
+                      </Link>
+                    )}
                     <button onClick={() => prefillAndNavigate(d, d.doc_type as DocType, router)} className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200">
                       📋 コピー
                     </button>

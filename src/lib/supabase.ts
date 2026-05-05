@@ -175,6 +175,13 @@ export async function saveDocumentRecord(rec: DocumentRecord): Promise<void> {
   }
 }
 
+export async function getDocumentById(id: string): Promise<DocumentRecord | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("documents").select("*").eq("id", id).single();
+  if (error || !data) return null;
+  return data as DocumentRecord;
+}
+
 export async function listDocuments(
   filter?: { docType?: "receipt" | "invoice" | "quotation"; limit?: number }
 ): Promise<DocumentRecord[]> {
