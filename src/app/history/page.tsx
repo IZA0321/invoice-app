@@ -69,13 +69,17 @@ function prefillAndNavigate(d: DocumentRecord, newType: DocType, router: ReturnT
   router.push("/documents");
 }
 
-function buildMailtoHref(d: DocumentRecord): string {
+function buildMailHref(d: DocumentRecord): string {
   const t = TYPE_LABEL[d.doc_type];
+  // 宛名末尾の様/御中/空白を除去して二重表記を防ぐ
+  const cleanName = d.recipient_name.replace(/[様御中\s]+$/g, "");
+  const honorific = d.recipient_honorific || "御中";
   const subject = encodeURIComponent(`${t.label}（${d.doc_number}）_IZA株式会社`);
   const body = encodeURIComponent(
-    `${d.recipient_name} ${d.recipient_honorific || "御中"}\n\nお世話になっております。IZA株式会社の高橋でございます。\n\n${t.label}をお送りいたします。\n下記URLよりご確認ください。\n\n${d.pdf_url || ""}\n\n何卒よろしくお願い申し上げます。\n\n--\nIZA株式会社\n高橋賢太朗\n〒180-0022 東京都武蔵野市境1-15-10 イストワール302\nTEL: 090-7542-9315\niza.japan2025@gmail.com`
+    `${cleanName} ${honorific}\n\nお世話になっております。\nIZA株式会社の高橋でございます。\n\n${t.label}をお送りいたします。\n下記URLよりご確認ください。\n\n${d.pdf_url || ""}\n\n何卒よろしくお願い申し上げます。\n\n--\nIZA株式会社\n高橋 賢太朗\n〒180-0022 東京都武蔵野市境1-15-10 イストワール302\nTEL: 090-7542-9315\niza.japan2025@gmail.com`
   );
-  return `mailto:?subject=${subject}&body=${body}`;
+  // Gmail Webコンポーザを直接開く（mailto:より確実）
+  return `https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`;
 }
 
 // ---------- CSV export ----------
@@ -201,7 +205,7 @@ export default function HistoryPage() {
 
   const handleCopyAndMail = (d: DocumentRecord) => {
     prefillAndNavigate(d, d.doc_type as DocType, router);
-    if (d.pdf_url) setTimeout(() => { window.open(buildMailtoHref(d), "_self"); }, 300);
+    if (d.pdf_url) setTimeout(() => { window.open(buildMailHref(d), "_self"); }, 300);
   };
 
   // 顧客マスタ
@@ -572,8 +576,8 @@ export default function HistoryPage() {
                         📋✉️ コピー＆メール
                       </button>
                     ) : (
-                      <a href={buildMailtoHref(d)} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100">
-                        ✉️ メール
+                      <a href={buildMailHref(d)} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100">
+                        ✉️ Gmailで送信
                       </a>
                     )}
                     <button onClick={() => handleDelete(d)} className="text-xs px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 ml-auto">
