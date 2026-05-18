@@ -759,9 +759,12 @@ export default function DocumentApp() {
                 <h1 className="text-lg font-bold flex items-center gap-2" style={{ color: config.color }}>
                   <IconFileText className="w-5 h-5" />IZA 書類作成
                 </h1>
-                <Link href="/history" className="text-xs text-blue-600 hover:underline">
-                  📚 書類履歴を見る →
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link href="/history" className="text-xs text-blue-600 hover:underline">
+                    📚 履歴 →
+                  </Link>
+                  <span className="text-xs text-slate-300">v2026.5.20-2</span>
+                </div>
               </div>
               <div className="flex gap-2">
                 <button
