@@ -174,7 +174,12 @@ export default function PreviewPage() {
             <div className="flex justify-between items-start mb-8 pb-4" style={{ borderBottom: `3px solid ${cfg.color}` }}>
               <div>
                 <h2 className="text-xs font-bold uppercase text-slate-500 mb-1">宛名</h2>
-                <div className="text-xl font-bold">{doc.recipient_name} {doc.recipient_honorific || "御中"}</div>
+                <div className="text-xl font-bold">{(() => {
+                  const name = doc.recipient_name || "";
+                  const honorific = doc.recipient_honorific || "御中";
+                  // 名前末尾に既に敬称が含まれていれば追加しない
+                  return /[様御中殿]$/.test(name.trimEnd()) ? name : `${name} ${honorific}`;
+                })()}</div>
               </div>
               <div className="text-right">
                 <h1 className="text-4xl font-black tracking-tight mb-1" style={{ color: cfg.color }}>{cfg.title}</h1>
