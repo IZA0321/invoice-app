@@ -763,7 +763,7 @@ export default function DocumentApp() {
                   <Link href="/history" className="text-xs text-blue-600 hover:underline">
                     📚 履歴 →
                   </Link>
-                  <span className="text-xs text-slate-300">v2026.5.20-3</span>
+                  <span className="text-xs text-slate-300">v2026.5.20-4</span>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -1086,16 +1086,25 @@ export default function DocumentApp() {
         </div>
 
         {/* PREVIEW */}
-        <div className="flex-grow bg-slate-500/10 flex items-start justify-center p-4 md:p-8 overflow-y-auto min-h-[500px]">
-          <div id="preview-area" className="bg-white shadow-2xl w-full max-w-[210mm] mx-auto origin-top"
-            style={{ transform: "scale(0.55)", transformOrigin: "top center" }}
+        <div className="flex-grow bg-slate-500/10 flex items-start justify-center p-4 md:p-8 overflow-x-hidden overflow-y-auto min-h-[500px]">
+          <div
+            id="preview-area"
+            className="bg-white shadow-2xl mx-auto origin-top"
+            style={{ width: "794px", transform: "scale(1)", transformOrigin: "top center" }}
             ref={(el) => {
               if (!el) return;
-              const vw = el.parentElement?.clientWidth ?? 800;
-              const scale = Math.min(1, (vw - 32) / 794);
-              el.style.transform = `scale(${scale})`;
-              el.style.marginBottom = `${-(794 * (1 - scale))}px`;
-            }}>
+              const updateScale = () => {
+                const vw = el.parentElement?.clientWidth ?? 800;
+                const scale = Math.min(1, (vw - 32) / 794);
+                el.style.transform = `scale(${scale})`;
+                el.style.marginBottom = `${-(el.scrollHeight * (1 - scale))}px`;
+              };
+              updateScale();
+              // ウィンドウサイズ変更に対応
+              const ro = new ResizeObserver(updateScale);
+              if (el.parentElement) ro.observe(el.parentElement);
+            }}
+          >
             <DocumentPreview />
           </div>
         </div>
