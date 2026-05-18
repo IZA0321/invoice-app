@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getDocumentById, DocumentRecord } from "@/lib/supabase";
 import { generatePdfBlob } from "@/lib/pdfExport";
@@ -61,12 +61,15 @@ function fmt(n: number) { return `¥${Math.round(n).toLocaleString()}`; }
 
 export default function PreviewPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params?.id as string;
+  const autoDownload = searchParams?.get("download") === "1";
 
   const [doc, setDoc] = useState<DocumentRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const autoDlFiredRef = useRef(false);
 
   useEffect(() => {
     if (!id) return;
@@ -100,6 +103,16 @@ export default function PreviewPage() {
       setDownloading(false);
     }
   };
+
+  // ?download=1 でアクセス時、プレビュー描画後に自動でDL実行（1回のみ）
+  useEffect(() => {
+    if (!autoDownload || !doc || autoDlFiredRef.current) return;
+    autoDlFiredRef.current = true;
+    // 描画完了を少し待ってからキャプチャ
+    const t = setTimeout(() => { handleDownload(); }, 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDownload, doc]);
 
   if (loading) return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center">

@@ -648,13 +648,15 @@ export default function DocumentApp() {
         </div>
 
         {/* Remarks + Tax Summary */}
-        <div className="grid grid-cols-2 gap-8 pt-5 border-t border-slate-200">
-          <div>
-            <h3 className="text-xs font-bold uppercase text-slate-500 mb-2">{remarksLabel}</h3>
-            <div className="text-sm bg-slate-50 p-3 rounded border border-slate-200 whitespace-pre-wrap" style={{ minHeight: "50px" }}>
-              {remarksFull || (isJa ? "（備考なし）" : "(No remarks)")}
+        <div className={`grid ${remarksFull ? "grid-cols-2" : "grid-cols-1"} gap-8 pt-5 border-t border-slate-200`}>
+          {remarksFull && (
+            <div>
+              <h3 className="text-xs font-bold uppercase text-slate-500 mb-2">{remarksLabel}</h3>
+              <div className="text-sm bg-slate-50 p-3 rounded border border-slate-200 whitespace-pre-wrap">
+                {remarksFull}
+              </div>
             </div>
-          </div>
+          )}
           <div>
             <div className="flex justify-between py-1 border-b border-slate-100">
               <span className="text-sm text-slate-500">{isJa ? "税抜金額" : "Subtotal (excl. tax)"}</span>
