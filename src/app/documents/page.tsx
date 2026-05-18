@@ -274,14 +274,21 @@ export default function DocumentApp() {
     } catch {}
   }, []);
 
-  // 書類種別切替時にデフォルト値を自動セット
+  // 書類種別切替時にデフォルト値を自動セット（請求書のみ振込先を自動入力）
   useEffect(() => {
     setData((prev) => {
-      if (docType === "invoice" || docType === "receipt") {
+      if (docType === "invoice") {
         return {
           ...prev,
           paymentMethod: prev.paymentMethod || "銀行振込",
           remarks: prev.remarks || savedBank,
+        };
+      }
+      if (docType === "receipt") {
+        return {
+          ...prev,
+          paymentMethod: "",
+          remarks: "",
         };
       }
       return prev;
