@@ -585,15 +585,15 @@ export default function DocumentApp() {
     const tc = taxCalc;
 
     return (
-      <div className="w-full bg-white p-10 text-slate-800 flex flex-col relative">
+      <div className="w-full bg-white p-10 text-slate-800 flex flex-col relative overflow-hidden">
         {/* Header */}
-        <div className="flex justify-between items-start mb-8 pb-4" style={{ borderBottom: `3px solid ${config.color}` }}>
-          <div>
+        <div className="flex justify-between items-start mb-8 pb-4 gap-4" style={{ borderBottom: `3px solid ${config.color}` }}>
+          <div className="min-w-0">
             <h2 className="text-xs font-bold uppercase text-slate-500 mb-1">{isJa ? "宛名" : "Bill To"}</h2>
-            <div className="text-xl font-bold">{data.recipientName}{isJa && data.recipientName ? ` ${data.recipientHonorific}` : ""}</div>
+            <div className="text-xl font-bold truncate">{data.recipientName}{isJa && data.recipientName ? ` ${data.recipientHonorific}` : ""}</div>
           </div>
-          <div className="text-right">
-            <h1 className="text-4xl font-black tracking-tight mb-1" style={{ color: config.color }}>{l.title}</h1>
+          <div className="text-right shrink-0">
+            <h1 className="text-3xl font-black tracking-tight mb-1 whitespace-nowrap" style={{ color: config.color }}>{l.title}</h1>
             <div className="text-xs text-slate-400">Page 1 / 1</div>
           </div>
         </div>
