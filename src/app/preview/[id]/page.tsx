@@ -183,7 +183,7 @@ export default function PreviewPage() {
               </div>
               <div className="text-right">
                 <h1 className="text-4xl font-black tracking-tight mb-1" style={{ color: cfg.color }}>{cfg.title}</h1>
-                <div className="text-xs text-slate-400">Page 1 / 1</div>
+                {doc.doc_type !== "receipt" && <div className="text-xs text-slate-400">Page 1 / 1</div>}
               </div>
             </div>
 
@@ -261,11 +261,13 @@ export default function PreviewPage() {
                     <div className="p-1 border-r border-slate-200 text-right">{fmt(tc.taxable10)}</div>
                     <div className="p-1 text-right">{fmt(tc.tax10)}</div>
                   </div>
-                  <div className="grid grid-cols-3 border-t border-slate-200">
-                    <div className="p-1 border-r border-slate-200">8%</div>
-                    <div className="p-1 border-r border-slate-200 text-right">{fmt(tc.taxable8)}</div>
-                    <div className="p-1 text-right">{fmt(tc.tax8)}</div>
-                  </div>
+                  {tc.taxable8 > 0 && (
+                    <div className="grid grid-cols-3 border-t border-slate-200">
+                      <div className="p-1 border-r border-slate-200">8%</div>
+                      <div className="p-1 border-r border-slate-200 text-right">{fmt(tc.taxable8)}</div>
+                      <div className="p-1 text-right">{fmt(tc.tax8)}</div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-between py-2 text-lg font-bold border-t border-slate-200">
                   <span>合計</span>
