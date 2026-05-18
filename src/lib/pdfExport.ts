@@ -10,36 +10,49 @@ export async function generatePdfBlob(elementId = "preview-area"): Promise<Blob>
   const el = document.getElementById(elementId);
   if (!el) throw new Error(`要素 #${elementId} が見つかりません`);
 
-  // プレビュー本体（最初の子要素）を取得
   const previewInner = el.firstElementChild as HTMLElement | null;
-  if (!previewInner) throw new Error("プレビュー要素が見つかりません");
 
   // 元のスタイルを記憶
-  const originalTransform = previewInner.style.transform;
-  const originalWidth = previewInner.style.width;
-  const originalMaxWidth = previewInner.style.maxWidth;
-  const originalMinHeight = previewInner.style.minHeight;
-  const originalElWidth = el.style.width;
+  const original = {
+    elTransform: el.style.transform,
+    elWidth: el.style.width,
+    elMaxWidth: el.style.maxWidth,
+    elMinWidth: el.style.minWidth,
+    elMarginBottom: el.style.marginBottom,
+    elOverflow: el.style.overflow,
+    innerTransform: previewInner?.style.transform ?? "",
+    innerWidth: previewInner?.style.width ?? "",
+    innerMaxWidth: previewInner?.style.maxWidth ?? "",
+  };
 
-  // A4サイズ相当（210mm = 約794px @ 96dpi）に強制
+  // A4幅相当（210mm = 794px @ 96dpi）に強制
   const A4_WIDTH_PX = 794;
-  previewInner.style.transform = "none";
-  previewInner.style.width = `${A4_WIDTH_PX}px`;
-  previewInner.style.maxWidth = `${A4_WIDTH_PX}px`;
-  previewInner.style.minHeight = "auto";
+  el.style.transform = "none";
   el.style.width = `${A4_WIDTH_PX}px`;
+  el.style.maxWidth = `${A4_WIDTH_PX}px`;
+  el.style.minWidth = `${A4_WIDTH_PX}px`;
+  el.style.marginBottom = "0";
+  el.style.overflow = "visible";
+  if (previewInner) {
+    previewInner.style.transform = "none";
+    previewInner.style.width = `${A4_WIDTH_PX}px`;
+    previewInner.style.maxWidth = `${A4_WIDTH_PX}px`;
+  }
 
   // レンダリング反映を待つ
   await new Promise((r) => requestAnimationFrame(r));
-  await new Promise((r) => setTimeout(r, 50));
+  await new Promise((r) => setTimeout(r, 100));
 
   try {
+    const fullHeight = el.scrollHeight;
     const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
       width: A4_WIDTH_PX,
+      height: fullHeight,
       windowWidth: A4_WIDTH_PX,
+      windowHeight: fullHeight,
     });
 
     const imgData = canvas.toDataURL("image/png");
@@ -56,10 +69,9 @@ export async function generatePdfBlob(elementId = "preview-area"): Promise<Blob>
     const imgHFull = pageW * imgRatio;
 
     if (imgHFull <= pageH) {
-      // 高さがA4以内 → 通常配置
       pdf.addImage(imgData, "PNG", 0, 0, imgWFull, imgHFull);
     } else {
-      // 高さがA4超 → 1ページに収まるよう全体縮小
+      // 全体縮小して1ページに収める
       const scaledH = pageH;
       const scaledW = pageH / imgRatio;
       const offsetX = (pageW - scaledW) / 2;
@@ -69,10 +81,16 @@ export async function generatePdfBlob(elementId = "preview-area"): Promise<Blob>
     return pdf.output("blob");
   } finally {
     // 元のスタイルを復元
-    previewInner.style.transform = originalTransform;
-    previewInner.style.width = originalWidth;
-    previewInner.style.maxWidth = originalMaxWidth;
-    previewInner.style.minHeight = originalMinHeight;
-    el.style.width = originalElWidth;
+    el.style.transform = original.elTransform;
+    el.style.width = original.elWidth;
+    el.style.maxWidth = original.elMaxWidth;
+    el.style.minWidth = original.elMinWidth;
+    el.style.marginBottom = original.elMarginBottom;
+    el.style.overflow = original.elOverflow;
+    if (previewInner) {
+      previewInner.style.transform = original.innerTransform;
+      previewInner.style.width = original.innerWidth;
+      previewInner.style.maxWidth = original.innerMaxWidth;
+    }
   }
 }
