@@ -268,10 +268,12 @@ export default function PreviewPage() {
             </div>
 
             {/* フッター */}
-            <div className="mt-6 pt-4 grid grid-cols-3 text-xs text-slate-500" style={{ borderTop: `3px solid ${cfg.color}` }}>
+            <div className={`mt-6 pt-4 text-xs text-slate-500 ${doc.doc_type === "receipt" ? "grid grid-cols-2" : "grid grid-cols-3"}`} style={{ borderTop: `3px solid ${cfg.color}` }}>
               <div><span className="block font-bold">{cfg.dateLabel}</span>{doc.issue_date}</div>
               <div><span className="block font-bold">{cfg.numberLabel}</span>{doc.doc_number}</div>
-              <div><span className="block font-bold">{cfg.dueDateLabel}</span>{doc.due_date || "—"}</div>
+              {doc.doc_type !== "receipt" && (
+                <div><span className="block font-bold">{cfg.dueDateLabel}</span>{doc.due_date || "—"}</div>
+              )}
             </div>
 
             {/* 発行者 */}
