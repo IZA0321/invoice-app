@@ -246,18 +246,23 @@ export default function PreviewPage() {
             </div>
 
             {/* 備考 + 税計算 */}
-            <div className="grid grid-cols-2 gap-8 pt-5 border-t border-slate-200">
-              <div>
-                <h3 className="text-xs font-bold uppercase text-slate-500 mb-2">
-                  {doc.doc_type === "receipt" ? "備考 / 支払情報" : doc.doc_type === "quotation" ? "備考 / 条件" : "備考 / 振込先"}
-                </h3>
-                <div className="text-sm bg-slate-50 p-3 rounded border border-slate-200 whitespace-pre-wrap" style={{ minHeight: 50 }}>
-                  {[
-                    doc.payment_method ? `支払方法: ${doc.payment_method}` : "",
-                    doc.remarks || "",
-                  ].filter(Boolean).join("\n") || "（備考なし）"}
-                </div>
-              </div>
+            {(() => {
+              const remarksText = [
+                doc.payment_method ? `支払方法: ${doc.payment_method}` : "",
+                doc.remarks || "",
+              ].filter(Boolean).join("\n");
+              return (
+                <div className={`grid ${remarksText ? "grid-cols-2" : "grid-cols-1"} gap-8 pt-5 border-t border-slate-200`}>
+                  {remarksText && (
+                    <div>
+                      <h3 className="text-xs font-bold uppercase text-slate-500 mb-2">
+                        {doc.doc_type === "receipt" ? "備考 / 支払情報" : doc.doc_type === "quotation" ? "備考 / 条件" : "備考 / 振込先"}
+                      </h3>
+                      <div className="text-sm bg-slate-50 p-3 rounded border border-slate-200 whitespace-pre-wrap">
+                        {remarksText}
+                      </div>
+                    </div>
+                  )}
               <div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-sm text-slate-500">税抜金額</span>
@@ -287,7 +292,9 @@ export default function PreviewPage() {
                   <span>{fmt(totalAmount)}</span>
                 </div>
               </div>
-            </div>
+                </div>
+              );
+            })()}
 
             {/* フッター */}
             <div className={`mt-6 pt-4 text-xs text-slate-500 ${doc.doc_type === "receipt" ? "grid grid-cols-2" : "grid grid-cols-3"}`} style={{ borderTop: `3px solid ${cfg.color}` }}>
