@@ -187,13 +187,15 @@ export default function PreviewPage() {
               </div>
             </div>
 
-            {/* 件名 + 合計 */}
+            {/* 件名 + 合計（領収書は件名非表示） */}
             <div className="flex justify-between mb-6">
-              <div>
-                <span className="block text-xs font-bold uppercase text-slate-500">件名</span>
-                <span className="text-lg font-medium">{doc.subject || "—"}</span>
-              </div>
-              <div className="text-right">
+              {doc.doc_type !== "receipt" && (
+                <div>
+                  <span className="block text-xs font-bold uppercase text-slate-500">件名</span>
+                  <span className="text-lg font-medium">{doc.subject || "—"}</span>
+                </div>
+              )}
+              <div className={doc.doc_type === "receipt" ? "w-full text-right" : "text-right"}>
                 <span className="block text-xs font-bold uppercase text-slate-500">合計金額（税込）</span>
                 <span className="text-2xl font-bold">{fmt(totalAmount)}</span>
               </div>
