@@ -549,7 +549,7 @@ export default function DocumentApp() {
     let r = "";
     if (docType === "receipt") {
       if (data.paymentMethod) r += `${isJa ? "支払方法" : "Method"}: ${data.paymentMethod}\n`;
-      if (data.extraDate) r += `${isJa ? "支払日" : "Paid on"}: ${data.extraDate}\n`;
+      // 領収書は領収日＝支払日のため支払日は表示しない
     }
     if (docType === "quotation") {
       if (data.extraDate) r += `${isJa ? "有効期限" : "Valid Until"}: ${data.extraDate}\n`;
@@ -687,7 +687,11 @@ export default function DocumentApp() {
         <div className="mt-6 pt-4 grid grid-cols-3 text-xs text-slate-500" style={{ borderTop: `3px solid ${config.color}` }}>
           <div><span className="block font-bold">{l.dateLabel}</span>{data.issueDate}</div>
           <div><span className="block font-bold">{l.numberLabel}</span>{docNum}</div>
-          {showRegistration && company.registrationNo ? (
+          {docType === "receipt" ? (
+            company.registrationNo ? (
+              <div><span className="block font-bold">{isJa ? "登録番号" : "Registration No"}</span>{company.registrationNo}</div>
+            ) : <div />
+          ) : showRegistration && company.registrationNo ? (
             <div><span className="block font-bold">{isJa ? "登録番号" : "Registration No"}</span>{company.registrationNo}</div>
           ) : (
             <div><span className="block font-bold">{l.extraDateLabel}</span>{data.extraDate}</div>
@@ -944,26 +948,28 @@ export default function DocumentApp() {
                   <div><Label>{labels.numberLabel}</Label><Input value={data.docNumber} onChange={(e) => setData({ ...data, docNumber: e.target.value })} placeholder="001" /></div>
                   <div><Label>{labels.dateLabel}</Label><Input type="date" value={data.issueDate} onChange={(e) => setData({ ...data, issueDate: e.target.value })} /></div>
                 </div>
-                <div>
-                  <Label>{labels.extraDateLabel}</Label>
-                  <Input type="date" value={data.extraDate} onChange={(e) => setData({ ...data, extraDate: e.target.value })} />
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {[
-                      { label: "今月末", fn: () => { const d = new Date(data.issueDate); d.setMonth(d.getMonth() + 1, 0); return d.toISOString().split("T")[0]; } },
-                      { label: "翌月末", fn: () => { const d = new Date(data.issueDate); d.setMonth(d.getMonth() + 2, 0); return d.toISOString().split("T")[0]; } },
-                      { label: "30日後", fn: () => { const d = new Date(data.issueDate); d.setDate(d.getDate() + 30); return d.toISOString().split("T")[0]; } },
-                      { label: "60日後", fn: () => { const d = new Date(data.issueDate); d.setDate(d.getDate() + 60); return d.toISOString().split("T")[0]; } },
-                    ].map((opt) => (
-                      <button
-                        key={opt.label}
-                        onClick={() => setData({ ...data, extraDate: opt.fn() })}
-                        className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded hover:bg-slate-200"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                {docType !== "receipt" && (
+                  <div>
+                    <Label>{labels.extraDateLabel}</Label>
+                    <Input type="date" value={data.extraDate} onChange={(e) => setData({ ...data, extraDate: e.target.value })} />
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {[
+                        { label: "今月末", fn: () => { const d = new Date(data.issueDate); d.setMonth(d.getMonth() + 1, 0); return d.toISOString().split("T")[0]; } },
+                        { label: "翌月末", fn: () => { const d = new Date(data.issueDate); d.setMonth(d.getMonth() + 2, 0); return d.toISOString().split("T")[0]; } },
+                        { label: "30日後", fn: () => { const d = new Date(data.issueDate); d.setDate(d.getDate() + 30); return d.toISOString().split("T")[0]; } },
+                        { label: "60日後", fn: () => { const d = new Date(data.issueDate); d.setDate(d.getDate() + 60); return d.toISOString().split("T")[0]; } },
+                      ].map((opt) => (
+                        <button
+                          key={opt.label}
+                          onClick={() => setData({ ...data, extraDate: opt.fn() })}
+                          className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded hover:bg-slate-200"
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
                 <div><Label>件名</Label><Input value={data.subject} onChange={(e) => setData({ ...data, subject: e.target.value })} placeholder="例: コンサルティング料" /></div>
                 <div>
                   <Label>合計金額 手動上書き（任意）</Label>
