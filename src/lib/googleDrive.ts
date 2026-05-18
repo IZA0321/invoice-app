@@ -201,5 +201,22 @@ export async function uploadPdfToDrive(opts: {
     const errText = await res.text();
     throw new Error(`アップロード失敗: ${res.status} - ${errText}`);
   }
-  return res.json();
+  const uploaded = await res.json();
+
+  // 「リンクを知っている全員」に公開設定（LINE等で共有可能に）
+  try {
+    await driveFetch(
+      opts.clientId,
+      `https://www.googleapis.com/drive/v3/files/${uploaded.id}/permissions?supportsAllDrives=true`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "anyone", role: "reader" }),
+      }
+    );
+  } catch (e) {
+    console.warn("公開設定失敗（手動で共有設定が必要）:", e);
+  }
+
+  return uploaded;
 }
