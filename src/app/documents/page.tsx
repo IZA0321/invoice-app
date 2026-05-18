@@ -763,7 +763,7 @@ export default function DocumentApp() {
                   <Link href="/history" className="text-xs text-blue-600 hover:underline">
                     📚 履歴 →
                   </Link>
-                  <span className="text-xs text-slate-300">v2026.5.20-2</span>
+                  <span className="text-xs text-slate-300">v2026.5.20-3</span>
                 </div>
               </div>
               <div className="flex gap-2">
