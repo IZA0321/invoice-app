@@ -56,12 +56,14 @@ export async function generatePdfBlob(elementId = "preview-area"): Promise<Blob>
   await new Promise((r) => setTimeout(r, 150));
 
   try {
+    // 実際の描画幅を測定（オーバーフロー考慮）
+    const actualWidth = Math.max(A4_WIDTH_PX, clone.scrollWidth);
     const canvas = await html2canvas(clone, {
       scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
-      width: A4_WIDTH_PX,
-      windowWidth: A4_WIDTH_PX,
+      width: actualWidth,
+      windowWidth: actualWidth,
     });
 
     const imgData = canvas.toDataURL("image/png");
