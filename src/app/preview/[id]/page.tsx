@@ -183,9 +183,20 @@ export default function PreviewPage() {
             id="preview-area"
             className="bg-white shadow-2xl w-full max-w-[210mm] p-10 text-slate-800 flex flex-col relative"
           >
+            {/* タイトル（絶対配置・右上40px固定／PDFオーバーフロー対策） */}
+            <h1
+              style={{
+                position: "absolute", top: "40px", right: "40px",
+                fontSize: "30px", fontWeight: 900, lineHeight: 1,
+                color: cfg.color, whiteSpace: "nowrap", margin: 0,
+              }}
+            >
+              {cfg.title}
+            </h1>
+
             {/* ヘッダー */}
             <div className="flex justify-between items-start mb-8 pb-4" style={{ borderBottom: `3px solid ${cfg.color}` }}>
-              <div>
+              <div style={{ minWidth: 0, flex: "1 1 auto", paddingRight: "130px" }}>
                 <h2 className="text-xs font-bold uppercase text-slate-500 mb-1">宛名</h2>
                 <div className="text-xl font-bold">{(() => {
                   const name = doc.recipient_name || "";
@@ -194,8 +205,7 @@ export default function PreviewPage() {
                   return /[様御中殿]$/.test(name.trimEnd()) ? name : `${name} ${honorific}`;
                 })()}</div>
               </div>
-              <div className="text-right">
-                <h1 className="text-4xl font-black tracking-tight mb-1" style={{ color: cfg.color }}>{cfg.title}</h1>
+              <div className="text-right" style={{ flex: "0 0 auto", paddingTop: "32px" }}>
                 {doc.doc_type !== "receipt" && <div className="text-xs text-slate-400">Page 1 / 1</div>}
               </div>
             </div>

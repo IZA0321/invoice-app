@@ -586,15 +586,19 @@ export default function DocumentApp() {
 
     return (
       <div className="w-full bg-white text-slate-800 flex flex-col relative" style={{ padding: "40px" }}>
+        {/* タイトル（絶対配置で右端から40px固定） */}
+        <h1 style={{ position: "absolute", top: "40px", right: "40px", fontSize: "30px", fontWeight: 900, lineHeight: 1, color: config.color, whiteSpace: "nowrap", margin: 0 }}>
+          {l.title}
+        </h1>
+
         {/* Header */}
         <div className="flex justify-between items-start mb-8 pb-4 gap-4" style={{ borderBottom: `3px solid ${config.color}` }}>
           <div style={{ minWidth: 0, flex: "1 1 auto" }}>
             <h2 className="text-xs font-bold uppercase text-slate-500 mb-1">{isJa ? "宛名" : "Bill To"}</h2>
             <div className="text-xl font-bold truncate">{data.recipientName}{isJa && data.recipientName ? ` ${data.recipientHonorific}` : ""}</div>
           </div>
-          <div style={{ textAlign: "right", flex: "0 0 auto" }}>
-            <h1 style={{ fontSize: "28px", fontWeight: 900, lineHeight: 1, color: config.color, whiteSpace: "nowrap", margin: 0 }}>{l.title}</h1>
-            <div className="text-xs text-slate-400 mt-1">Page 1 / 1</div>
+          <div style={{ textAlign: "right", flex: "0 0 auto", paddingTop: "32px" }}>
+            <div className="text-xs text-slate-400">Page 1 / 1</div>
           </div>
         </div>
 
@@ -763,7 +767,7 @@ export default function DocumentApp() {
                   <Link href="/history" className="text-xs text-blue-600 hover:underline">
                     📚 履歴 →
                   </Link>
-                  <span className="text-xs text-slate-300">v2026.5.20-5</span>
+                  <span className="text-xs text-slate-300">v2026.5.20-6</span>
                 </div>
               </div>
               <div className="flex gap-2">
