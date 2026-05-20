@@ -198,7 +198,7 @@ export default function DocumentApp() {
   const [company, setCompany] = useState<Company>(IZA_COMPANY);
   const [numberPrefix, setNumberPrefix] = useState("");
   const [logo, setLogo] = useState<string | null>("/iza_logo.png");
-  const [stamp, setStamp] = useState<string | null>("/iza_kakuin.svg");
+  const [stamp, setStamp] = useState<string | null>("/iza_kakuin.png");
   const [taxMode, setTaxMode] = useState<TaxMode>("inclusive");
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -226,7 +226,12 @@ export default function DocumentApp() {
       const savedLogo = localStorage.getItem("izaDocLogo");
       if (savedLogo) setLogo(savedLogo);
       const savedStamp = localStorage.getItem("izaDocStamp");
-      if (savedStamp) setStamp(savedStamp);
+      // 旧SVG版が保存されていたらPNG版に置き換え
+      if (savedStamp && savedStamp !== "/iza_kakuin.svg") setStamp(savedStamp);
+      else if (savedStamp === "/iza_kakuin.svg") {
+        setStamp("/iza_kakuin.png");
+        localStorage.removeItem("izaDocStamp");
+      }
       const savedPrefix = localStorage.getItem("izaDocPrefix");
       if (savedPrefix) setNumberPrefix(savedPrefix);
       const savedTaxMode = localStorage.getItem("izaDocTaxMode");
@@ -767,7 +772,7 @@ export default function DocumentApp() {
                   <Link href="/history" className="text-xs text-blue-600 hover:underline">
                     📚 履歴 →
                   </Link>
-                  <span className="text-xs text-slate-300">v2026.5.20-7</span>
+                  <span className="text-xs text-slate-300">v2026.5.20-8</span>
                 </div>
               </div>
               <div className="flex gap-2">

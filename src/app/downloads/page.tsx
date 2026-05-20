@@ -14,18 +14,18 @@ export default function DownloadsPage() {
         {/* 角印 */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <div className="flex items-center gap-4 mb-4">
-            <img src="/iza_kakuin.svg" alt="IZA角印" className="w-20 h-20 object-contain border border-gray-100 rounded" />
+            <img src="/iza_kakuin.png" alt="IZA角印" className="w-20 h-20 object-contain border border-gray-100 rounded" />
             <div>
               <p className="font-semibold text-gray-800">IZA株式会社 角印</p>
               <p className="text-xs text-gray-500 mt-1">領収書・請求書・見積書に使用</p>
             </div>
           </div>
           <a
-            href="/iza_kakuin.svg"
-            download="IZA株式会社_角印.svg"
+            href="/iza_kakuin.png"
+            download="IZA株式会社_角印.png"
             className="block w-full bg-blue-600 text-white text-center py-3 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors"
           >
-            ダウンロード（SVG）
+            ダウンロード（PNG）
           </a>
         </div>
 

@@ -12,7 +12,7 @@ const IZA = {
   addressJa: "〒180-0022 東京都武蔵野市境1-15-10 イストワール302",
   tel: "090-7542-9315",
   email: "iza.japan2025@gmail.com",
-  stamp: "/iza_kakuin.svg",
+  stamp: "/iza_kakuin.png",
   logo: "/iza_logo.png",
 };
 
