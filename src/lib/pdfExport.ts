@@ -51,8 +51,23 @@ export async function generatePdfBlob(elementId = "preview-area"): Promise<Blob>
     inner.style.minWidth = `${A4_WIDTH_PX}px`;
   }
 
-  // レンダリング反映待ち（フォント・画像読み込み含む）
+  // レンダリング反映待ち
   await new Promise((r) => requestAnimationFrame(r));
+
+  // クローン内の全画像の読み込み完了を待つ（角印・ロゴ等）
+  const images = Array.from(clone.querySelectorAll("img"));
+  await Promise.all(
+    images.map((img) => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        const done = () => resolve();
+        img.addEventListener("load", done, { once: true });
+        img.addEventListener("error", done, { once: true });
+        // フォールバックタイムアウト
+        setTimeout(done, 3000);
+      });
+    })
+  );
   await new Promise((r) => setTimeout(r, 150));
 
   try {
@@ -61,6 +76,8 @@ export async function generatePdfBlob(elementId = "preview-area"): Promise<Blob>
     const canvas = await html2canvas(clone, {
       scale: 2,
       useCORS: true,
+      allowTaint: true,
+      imageTimeout: 5000,
       backgroundColor: "#ffffff",
       width: actualWidth,
       windowWidth: actualWidth,
