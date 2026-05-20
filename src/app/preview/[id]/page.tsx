@@ -138,7 +138,7 @@ export default function PreviewPage() {
           #preview-area {
             position: absolute; left: 0; top: 0;
             width: 210mm !important; max-width: 210mm !important;
-            margin: 0 !important; padding: 15mm !important;
+            margin: 0 !important; padding: 0 !important;
             transform: none !important; box-shadow: none !important;
             background: white !important;
           }
@@ -181,8 +181,10 @@ export default function PreviewPage() {
         <div className="py-6 px-4 flex justify-center">
           <div
             id="preview-area"
-            className="bg-white shadow-2xl w-full max-w-[210mm] p-10 text-slate-800 flex flex-col relative"
+            className="bg-white shadow-2xl w-full max-w-[210mm]"
           >
+            {/* 内側ラッパー：余白はここに持たせる（PDF生成が最初の子要素を794pxにするため） */}
+            <div className="p-10 text-slate-800 flex flex-col relative">
             {/* ヘッダー（テーブルレイアウト：html2canvasで安定） */}
             <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "32px" }}>
               <tbody>
@@ -324,6 +326,7 @@ export default function PreviewPage() {
                   <img src={IZA.logo} alt="Logo" className="max-w-full max-h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>
