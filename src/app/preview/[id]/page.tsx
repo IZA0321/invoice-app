@@ -183,32 +183,25 @@ export default function PreviewPage() {
             id="preview-area"
             className="bg-white shadow-2xl w-full max-w-[210mm] p-10 text-slate-800 flex flex-col relative"
           >
-            {/* タイトル（絶対配置・右上40px固定／PDFオーバーフロー対策） */}
-            <h1
-              style={{
-                position: "absolute", top: "40px", right: "40px",
-                fontSize: "30px", fontWeight: 900, lineHeight: 1,
-                color: cfg.color, whiteSpace: "nowrap", margin: 0,
-              }}
-            >
-              {cfg.title}
-            </h1>
-
-            {/* ヘッダー */}
-            <div className="flex justify-between items-start mb-8 pb-4" style={{ borderBottom: `3px solid ${cfg.color}` }}>
-              <div style={{ minWidth: 0, flex: "1 1 auto", paddingRight: "130px" }}>
-                <h2 className="text-xs font-bold uppercase text-slate-500 mb-1">宛名</h2>
-                <div className="text-xl font-bold">{(() => {
-                  const name = doc.recipient_name || "";
-                  const honorific = doc.recipient_honorific || "御中";
-                  // 名前末尾に既に敬称が含まれていれば追加しない
-                  return /[様御中殿]$/.test(name.trimEnd()) ? name : `${name} ${honorific}`;
-                })()}</div>
-              </div>
-              <div className="text-right" style={{ flex: "0 0 auto", paddingTop: "32px" }}>
-                {doc.doc_type !== "receipt" && <div className="text-xs text-slate-400">Page 1 / 1</div>}
-              </div>
-            </div>
+            {/* ヘッダー（テーブルレイアウト：html2canvasで安定） */}
+            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "32px" }}>
+              <tbody>
+                <tr>
+                  <td style={{ textAlign: "left", verticalAlign: "bottom", paddingBottom: "16px", borderBottom: `3px solid ${cfg.color}` }}>
+                    <div className="text-xs font-bold uppercase text-slate-500 mb-1">宛名</div>
+                    <div className="text-xl font-bold">{(() => {
+                      const name = doc.recipient_name || "";
+                      const honorific = doc.recipient_honorific || "御中";
+                      return /[様御中殿]$/.test(name.trimEnd()) ? name : `${name} ${honorific}`;
+                    })()}</div>
+                  </td>
+                  <td style={{ textAlign: "right", verticalAlign: "bottom", whiteSpace: "nowrap", paddingBottom: "16px", borderBottom: `3px solid ${cfg.color}` }}>
+                    <div style={{ fontSize: "30px", fontWeight: 900, lineHeight: 1, color: cfg.color }}>{cfg.title}</div>
+                    {doc.doc_type !== "receipt" && <div className="text-xs text-slate-400" style={{ marginTop: "4px" }}>Page 1 / 1</div>}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
             {/* 件名 + 合計（領収書は件名非表示） */}
             <div className="flex justify-between mb-6">
