@@ -152,7 +152,7 @@ export default function PreviewPage() {
           <Link href="/history" className="text-blue-500 text-lg shrink-0">‹</Link>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-800 truncate">
-              {doc.recipient_name} {doc.recipient_honorific || "御中"} — {cfg.title}
+              {doc.recipient_name ? `${doc.recipient_name} ${doc.recipient_honorific || "御中"}` : "(宛名なし)"} — {cfg.title}
             </p>
             <p className="text-xs text-slate-400">{doc.doc_number} · {doc.issue_date}</p>
           </div>
@@ -192,9 +192,10 @@ export default function PreviewPage() {
                   <td style={{ textAlign: "left", verticalAlign: "bottom", paddingBottom: "16px", borderBottom: `3px solid ${cfg.color}` }}>
                     <div className="text-xs font-bold uppercase text-slate-500 mb-1">宛名</div>
                     <div className="text-xl font-bold">{(() => {
-                      const name = doc.recipient_name || "";
+                      const name = (doc.recipient_name || "").trim();
+                      if (!name) return <span className="text-slate-300 font-normal">—</span>;
                       const honorific = doc.recipient_honorific || "御中";
-                      return /[様御中殿]$/.test(name.trimEnd()) ? name : `${name} ${honorific}`;
+                      return /[様御中殿]$/.test(name) ? name : `${name} ${honorific}`;
                     })()}</div>
                   </td>
                   <td style={{ textAlign: "right", verticalAlign: "bottom", whiteSpace: "nowrap", paddingBottom: "16px", borderBottom: `3px solid ${cfg.color}` }}>
