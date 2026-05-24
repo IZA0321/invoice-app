@@ -190,13 +190,18 @@ export default function PreviewPage() {
               <tbody>
                 <tr>
                   <td style={{ textAlign: "left", verticalAlign: "bottom", paddingBottom: "16px", borderBottom: `3px solid ${cfg.color}` }}>
-                    <div className="text-xs font-bold uppercase text-slate-500 mb-1">宛名</div>
-                    <div className="text-xl font-bold">{(() => {
+                    {(() => {
                       const name = (doc.recipient_name || "").trim();
-                      if (!name) return <span className="text-slate-300 font-normal">—</span>;
+                      if (!name) return null;
                       const honorific = doc.recipient_honorific || "御中";
-                      return /[様御中殿]$/.test(name) ? name : `${name} ${honorific}`;
-                    })()}</div>
+                      const display = /[様御中殿]$/.test(name) ? name : `${name} ${honorific}`;
+                      return (
+                        <>
+                          <div className="text-xs font-bold uppercase text-slate-500 mb-1">宛名</div>
+                          <div className="text-xl font-bold">{display}</div>
+                        </>
+                      );
+                    })()}
                   </td>
                   <td style={{ textAlign: "right", verticalAlign: "bottom", whiteSpace: "nowrap", paddingBottom: "16px", borderBottom: `3px solid ${cfg.color}` }}>
                     <div style={{ fontSize: "30px", fontWeight: 900, lineHeight: 1, color: cfg.color }}>{cfg.title}</div>
