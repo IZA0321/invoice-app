@@ -11,6 +11,7 @@ export interface DocumentRecord {
   doc_number: string;
   recipient_name: string;
   recipient_honorific?: string;
+  requester_name?: string | null;
   subject: string | null;
   issue_date: string;
   total_amount: number;
@@ -30,6 +31,7 @@ export interface DocumentRecord {
 // ALTER TABLE documents ADD COLUMN IF NOT EXISTS payment_status text DEFAULT 'unpaid';
 // ALTER TABLE documents ADD COLUMN IF NOT EXISTS paid_at date;
 // ALTER TABLE documents ADD COLUMN IF NOT EXISTS due_date date;
+// ALTER TABLE documents ADD COLUMN IF NOT EXISTS requester_name text;
 
 export async function updatePaymentStatus(
   id: string,

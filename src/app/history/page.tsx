@@ -502,7 +502,9 @@ export default function HistoryPage() {
                         <p className="text-sm font-semibold text-slate-800 truncate">
                           {d.recipient_name
                             ? `${d.recipient_name} ${d.recipient_honorific || "御中"}`
-                            : <span className="text-slate-400">(宛名なし)</span>}
+                            : d.requester_name
+                              ? <><span className="text-slate-400 font-normal">依頼: </span>{d.requester_name}</>
+                              : <span className="text-slate-400">(宛名なし)</span>}
                         </p>
                         {d.recipient_name && (
                           <button onClick={() => openCustomerEdit(d.recipient_name)} className="text-xs text-slate-400 hover:text-blue-500 shrink-0" title="顧客情報を編集">✏️</button>
