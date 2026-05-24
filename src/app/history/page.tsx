@@ -500,9 +500,13 @@ export default function HistoryPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="text-sm font-semibold text-slate-800 truncate">
-                          {d.recipient_name} {d.recipient_honorific || "御中"}
+                          {d.recipient_name
+                            ? `${d.recipient_name} ${d.recipient_honorific || "御中"}`
+                            : <span className="text-slate-400">(宛名なし)</span>}
                         </p>
-                        <button onClick={() => openCustomerEdit(d.recipient_name)} className="text-xs text-slate-400 hover:text-blue-500 shrink-0" title="顧客情報を編集">✏️</button>
+                        {d.recipient_name && (
+                          <button onClick={() => openCustomerEdit(d.recipient_name)} className="text-xs text-slate-400 hover:text-blue-500 shrink-0" title="顧客情報を編集">✏️</button>
+                        )}
                         {extra && (extra.contact || extra.tel) && (
                           <span className="text-xs text-slate-400">
                             {extra.contact && `👤 ${extra.contact}`}
