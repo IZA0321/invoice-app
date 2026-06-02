@@ -174,10 +174,13 @@ export default function HistoryPage() {
   // ---------- ハンドラー ----------
   const handleDelete = async (d: DocumentRecord) => {
     if (!d.id) return;
-    if (!confirm(`「${d.recipient_name}」の${TYPE_LABEL[d.doc_type].label}（${d.doc_number}）を削除しますか？\n\n※Google Drive上のPDFは削除されません。`)) return;
+    if (!confirm(`「${d.recipient_name || "(宛名なし)"}」の${TYPE_LABEL[d.doc_type].label}（${d.doc_number}）を削除しますか？\n\n※Google Drive上のPDFも削除されます。`)) return;
     try {
-      await deleteDocument(d.id);
+      const { driveDeleted } = await deleteDocument(d.id);
       setDocs((prev) => prev.filter((x) => x.id !== d.id));
+      if (d.drive_file_id && !driveDeleted) {
+        alert("書類は削除しましたが、Google Drive上のPDF削除に失敗した可能性があります。Drive側をご確認ください。");
+      }
     } catch (e) {
       alert("削除に失敗しました: " + (e instanceof Error ? e.message : "不明なエラー"));
     }

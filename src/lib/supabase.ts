@@ -49,10 +49,32 @@ export async function updatePaymentStatus(
   if (error) throw error;
 }
 
-export async function deleteDocument(id: string): Promise<void> {
-  if (!supabase) return;
+// LINE bot側の削除API（Drive上のPDFも連動削除）
+const DELETE_API_URL = "https://iza-line-bot.vercel.app/api/documents/delete";
+
+export async function deleteDocument(id: string): Promise<{ driveDeleted: boolean }> {
+  // まずLINE bot経由でSupabase行 + Driveファイルを削除
+  try {
+    const res = await fetch(DELETE_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return { driveDeleted: !!data.driveDeleted };
+    }
+    // 404（書類なし）以外はフォールバックへ
+    console.warn("削除APIが失敗、Supabase直接削除にフォールバック:", res.status);
+  } catch (e) {
+    console.warn("削除API呼び出し例外、フォールバック:", e);
+  }
+
+  // フォールバック：Supabaseのみ削除（Driveは消えない）
+  if (!supabase) return { driveDeleted: false };
   const { error } = await supabase.from("documents").delete().eq("id", id);
   if (error) throw error;
+  return { driveDeleted: false };
 }
 
 export interface MonthlySummary {
