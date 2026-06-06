@@ -152,6 +152,23 @@ export async function getRecentCustomers(limit = 30): Promise<{ name: string; ho
  * 今日の日付・指定された書類種別で次の連番を取得
  * 例: 20260502001 → 20260502002
  */
+// 書類種別ごとの番号プレフィックス
+export const DOC_PREFIX: Record<"receipt" | "invoice" | "quotation", string> = {
+  receipt: "REC-",
+  invoice: "INV-",
+  quotation: "EST-",
+};
+
+// 番号にプレフィックスを付与（既に付いていれば付け直さない）
+export function withDocPrefix(
+  docType: "receipt" | "invoice" | "quotation",
+  num: string
+): string {
+  if (!num) return num;
+  if (/^(REC|INV|EST)-/i.test(num)) return num;
+  return `${DOC_PREFIX[docType] || ""}${num}`;
+}
+
 export async function getNextDocNumber(
   docType: "receipt" | "invoice" | "quotation"
 ): Promise<string> {
@@ -160,6 +177,7 @@ export async function getNextDocNumber(
   const m = String(today.getMonth() + 1).padStart(2, "0");
   const d = String(today.getDate()).padStart(2, "0");
   const datePrefix = `${y}${m}${d}`;
+  const prefix = DOC_PREFIX[docType] || "";
 
   if (!supabase) {
     // Supabase未設定時はlocalStorageでフォールバック
@@ -167,27 +185,28 @@ export async function getNextDocNumber(
     const cur = parseInt(localStorage.getItem(key) || "0", 10);
     const next = cur + 1;
     localStorage.setItem(key, String(next));
-    return `${datePrefix}${String(next).padStart(3, "0")}`;
+    return `${prefix}${datePrefix}${String(next).padStart(3, "0")}`;
   }
 
+  // プレフィックス有無どちらの当日番号もヒットさせる（移行期互換）
   const { data, error } = await supabase
     .from("documents")
     .select("doc_number")
     .eq("doc_type", docType)
-    .like("doc_number", `${datePrefix}%`)
+    .like("doc_number", `%${datePrefix}%`)
     .order("doc_number", { ascending: false })
     .limit(1);
 
   if (error) {
     console.error(error);
-    return `${datePrefix}001`;
+    return `${prefix}${datePrefix}001`;
   }
 
-  if (!data || data.length === 0) return `${datePrefix}001`;
+  if (!data || data.length === 0) return `${prefix}${datePrefix}001`;
 
   const last = data[0].doc_number as string;
-  const lastSeq = parseInt(last.slice(-3), 10);
-  return `${datePrefix}${String(lastSeq + 1).padStart(3, "0")}`;
+  const lastSeq = parseInt(last.slice(-3), 10) || 0;
+  return `${prefix}${datePrefix}${String(lastSeq + 1).padStart(3, "0")}`;
 }
 
 export async function saveDocumentRecord(rec: DocumentRecord): Promise<void> {

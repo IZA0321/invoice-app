@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { generatePdfBlob } from "@/lib/pdfExport";
 import { uploadPdfToDrive } from "@/lib/googleDrive";
-import { getNextDocNumber, saveDocumentRecord, getRecentCustomers } from "@/lib/supabase";
+import { getNextDocNumber, saveDocumentRecord, getRecentCustomers, withDocPrefix } from "@/lib/supabase";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
@@ -381,12 +381,15 @@ export default function DocumentApp() {
     }
     setSavingDrive(true);
     try {
-      // 採番（未入力なら自動採番）
+      // 採番（未入力なら自動採番、手入力ならプレフィックス付与）
       let docNumber = data.docNumber;
       if (!docNumber) {
-        const fullNumber = await getNextDocNumber(docType);
-        docNumber = fullNumber;
-        setData((prev) => ({ ...prev, docNumber: fullNumber }));
+        docNumber = await getNextDocNumber(docType);
+      } else {
+        docNumber = withDocPrefix(docType, docNumber);
+      }
+      if (docNumber !== data.docNumber) {
+        setData((prev) => ({ ...prev, docNumber: docNumber as string }));
       }
 
       const blob = await generatePdfBlob("preview-area");
