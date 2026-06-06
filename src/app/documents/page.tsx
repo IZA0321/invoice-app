@@ -282,18 +282,12 @@ export default function DocumentApp() {
   // 書類種別切替時にデフォルト値を自動セット（請求書のみ振込先を自動入力）
   useEffect(() => {
     setData((prev) => {
-      if (docType === "invoice") {
+      // 請求書・領収書は「銀行振込 + 保存済み振込先」をデフォルト表示（編集可）
+      if (docType === "invoice" || docType === "receipt") {
         return {
           ...prev,
           paymentMethod: prev.paymentMethod || "銀行振込",
           remarks: prev.remarks || savedBank,
-        };
-      }
-      if (docType === "receipt") {
-        return {
-          ...prev,
-          paymentMethod: "",
-          remarks: "",
         };
       }
       return prev;
@@ -1023,8 +1017,8 @@ export default function DocumentApp() {
                 )}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <Label className="mb-0">{docType === "invoice" ? "振込先・備考" : "備考"}</Label>
-                    {docType === "invoice" && (
+                    <Label className="mb-0">{docType === "invoice" || docType === "receipt" ? "振込先・備考" : "備考"}</Label>
+                    {(docType === "invoice" || docType === "receipt") && (
                       <div className="flex gap-2">
                         <button
                           onClick={applyBank}
@@ -1042,7 +1036,7 @@ export default function DocumentApp() {
                     )}
                   </div>
                   <Textarea rows={5} value={data.remarks} onChange={(e) => setData({ ...data, remarks: e.target.value })}
-                    placeholder={docType === "invoice" ? "振込先情報が自動入力されます" : docType === "quotation" ? "条件・特記事項" : "備考欄"} />
+                    placeholder={docType === "invoice" || docType === "receipt" ? "振込先情報が自動入力されます" : docType === "quotation" ? "条件・特記事項" : "備考欄"} />
                 </div>
               </Collapsible>
 
