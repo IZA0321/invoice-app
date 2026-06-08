@@ -92,7 +92,19 @@ export default function PreviewPage() {
       const blob = await generatePdfBlob("preview-area");
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const fname = `${doc.issue_date.replace(/-/g, "")}_${doc.recipient_name}_${cfg.title}.pdf`;
+      // ファイル名の宛名（敬称付き）: 宛名 > 依頼者 > 宛名なし
+      const recName = (doc.recipient_name || "").trim();
+      const honorific = doc.recipient_honorific || "御中";
+      let nameForFile: string;
+      if (recName) {
+        // 既に末尾が敬称ならそのまま、無ければ付与
+        nameForFile = /[様御中殿]$/.test(recName) ? recName : `${recName}${honorific}`;
+      } else {
+        const reqName = (doc.requester_name || "").trim();
+        nameForFile = reqName ? `宛名なし_${reqName}` : "宛名なし";
+      }
+      const safeName = nameForFile.replace(/[\\/:*?"<>|\s]+/g, "_");
+      const fname = `${doc.issue_date.replace(/-/g, "")}_${safeName}_${cfg.title}.pdf`;
       a.href = url;
       a.download = fname;
       a.click();
