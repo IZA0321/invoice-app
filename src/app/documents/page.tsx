@@ -621,7 +621,7 @@ export default function DocumentApp() {
           <table className="w-full text-left">
             <thead style={{ backgroundColor: config.color + "12" }}>
               <tr>
-                <th className="py-2 px-3 text-xs font-bold uppercase text-slate-500">{isJa ? "摘要" : "Description"}</th>
+                <th className="py-2 px-3 text-xs font-bold uppercase text-slate-500">{isJa ? (docType === "receipt" ? "明細" : "摘要") : "Description"}</th>
                 <th className="py-2 px-3 text-xs font-bold uppercase text-slate-500 text-center w-16">{isJa ? "数量" : "Qty"}</th>
                 <th className="py-2 px-3 text-xs font-bold uppercase text-slate-500 text-right w-24">{isJa ? "単価" : "Unit Price"}</th>
                 <th className="py-2 px-3 text-xs font-bold uppercase text-slate-500 text-center w-20">{isJa ? "税区分" : "Tax"}</th>

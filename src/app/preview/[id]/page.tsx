@@ -237,7 +237,7 @@ export default function PreviewPage() {
               <table className="w-full text-left">
                 <thead style={{ backgroundColor: cfg.color + "12" }}>
                   <tr>
-                    <th className="py-2 px-3 text-xs font-bold uppercase text-slate-500">摘要</th>
+                    <th className="py-2 px-3 text-xs font-bold uppercase text-slate-500">{doc.doc_type === "receipt" ? "明細" : "摘要"}</th>
                     <th className="py-2 px-3 text-xs font-bold uppercase text-slate-500 text-center w-16">数量</th>
                     <th className="py-2 px-3 text-xs font-bold uppercase text-slate-500 text-right w-28">単価</th>
                     <th className="py-2 px-3 text-xs font-bold uppercase text-slate-500 text-center w-20">税区分</th>
