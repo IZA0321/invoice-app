@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { generatePdfBlob } from "@/lib/pdfExport";
 import { uploadPdfToDrive } from "@/lib/googleDrive";
@@ -85,6 +85,14 @@ interface Company {
 }
 
 type Honorific = "御中" | "様";
+
+// 法人格を含まない宛名は個人名とみなし「様」を提案する
+const CORPORATE_KEYWORDS = ["株式会社", "有限会社", "合同会社", "合資会社", "合名会社", "一般社団法人", "公益社団法人", "一般財団法人", "公益財団法人", "医療法人", "社会福祉法人", "学校法人", "宗教法人", "特定非営利活動法人", "NPO法人", "協同組合", "事務所", "商店", "工房", "クリニック", "医院", "病院", "会", "組合", "Inc.", "Inc", "LLC", "Co.,", "Corp", "株）", "（株）"];
+function guessHonorific(name: string): Honorific {
+  const trimmed = name.trim();
+  if (!trimmed) return "御中";
+  return CORPORATE_KEYWORDS.some((kw) => trimmed.includes(kw)) ? "御中" : "様";
+}
 type Currency = "JPY" | "USD" | "EUR";
 
 const CURRENCY_SYMBOLS: Record<Currency, string> = {
@@ -204,12 +212,14 @@ export default function DocumentApp() {
   const [errorMsg, setErrorMsg] = useState("");
   const [savedBank, setSavedBank] = useState(IZA_DEFAULT_BANK);
   const [customers, setCustomers] = useState<{ name: string; honorific: string; lastSubject: string }[]>([]);
+  const honorificTouchedRef = useRef(false);
 
   useEffect(() => {
     getRecentCustomers(20).then(setCustomers);
   }, []);
 
   const applyCustomer = (c: { name: string; honorific: string; lastSubject: string }) => {
+    honorificTouchedRef.current = true;
     setData((prev) => ({
       ...prev,
       recipientName: c.name,
@@ -968,19 +978,30 @@ export default function DocumentApp() {
                     <Input
                       className="flex-1"
                       value={data.recipientName}
-                      onChange={(e) => setData({ ...data, recipientName: e.target.value })}
-                      placeholder="例: 株式会社〇〇"
+                      onChange={(e) => {
+                        const name = e.target.value;
+                        setData((prev) => ({
+                          ...prev,
+                          recipientName: name,
+                          // ユーザーが敬称を手動変更していなければ、入力内容から自動判定
+                          recipientHonorific: honorificTouchedRef.current ? prev.recipientHonorific : guessHonorific(name),
+                        }));
+                      }}
+                      placeholder="例: 株式会社〇〇 / 個人名"
                     />
                     <select
                       value={data.recipientHonorific}
-                      onChange={(e) => setData({ ...data, recipientHonorific: e.target.value as Honorific })}
+                      onChange={(e) => {
+                        honorificTouchedRef.current = true;
+                        setData({ ...data, recipientHonorific: e.target.value as Honorific });
+                      }}
                       className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     >
                       <option value="御中">御中</option>
                       <option value="様">様</option>
                     </select>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">会社・組織は「御中」、個人は「様」</p>
+                  <p className="text-xs text-slate-400 mt-1">会社・組織は「御中」、個人は「様」（自動判定・手動変更も可）</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>{labels.numberLabel}</Label><Input value={data.docNumber} onChange={(e) => setData({ ...data, docNumber: e.target.value })} placeholder="001" /></div>
