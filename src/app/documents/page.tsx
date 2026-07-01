@@ -398,28 +398,48 @@ export default function DocumentApp() {
       });
 
       // Supabaseに履歴記録（完全な情報）
-      try {
-        await saveDocumentRecord({
-          doc_type: docType,
-          doc_number: docNumber,
-          recipient_name: data.recipientName,
-          recipient_honorific: data.recipientHonorific,
-          subject: data.subject || null,
-          issue_date: data.issueDate,
-          total_amount: totalAmount,
-          items: data.items,
-          payment_method: data.paymentMethod || null,
-          remarks: data.remarks || null,
-          pdf_url: result.webViewLink,
-          drive_file_id: result.id,
-          due_date: docType === "invoice" && data.extraDate ? data.extraDate : null,
-          payment_status: docType === "invoice" ? "unpaid" : undefined,
-        });
-      } catch (e) {
-        console.warn("履歴の記録に失敗:", e);
+      // 番号重複(409)時は最大3回まで次の番号で自動リトライ
+      let historySaved = false;
+      let historyError: unknown = null;
+      let attemptNumber = docNumber;
+      for (let i = 0; i < 4; i++) {
+        try {
+          await saveDocumentRecord({
+            doc_type: docType,
+            doc_number: attemptNumber,
+            recipient_name: data.recipientName,
+            recipient_honorific: data.recipientHonorific,
+            subject: data.subject || null,
+            issue_date: data.issueDate,
+            total_amount: totalAmount,
+            items: data.items,
+            payment_method: data.paymentMethod || null,
+            remarks: data.remarks || null,
+            pdf_url: result.webViewLink,
+            drive_file_id: result.id,
+            due_date: docType === "invoice" && data.extraDate ? data.extraDate : null,
+            payment_status: docType === "invoice" ? "unpaid" : undefined,
+          });
+          historySaved = true;
+          docNumber = attemptNumber;
+          setData((prev) => ({ ...prev, docNumber: attemptNumber }));
+          break;
+        } catch (e) {
+          historyError = e;
+          const msg = String((e as { message?: string })?.message || "");
+          const isDuplicate = msg.includes("duplicate") || msg.includes("23505") || msg.includes("unique");
+          if (!isDuplicate) break;
+          // 次の連番でリトライ
+          attemptNumber = await getNextDocNumber(docType);
+        }
       }
 
-      alert(`Google Driveに保存しました\n\nファイル名: ${fileName}\n\n表示: ${result.webViewLink}`);
+      if (historySaved) {
+        alert(`Google Driveに保存し、履歴にも記録しました\n\nファイル名: ${fileName}\n書類番号: ${docNumber}\n\n表示: ${result.webViewLink}`);
+      } else {
+        console.error("履歴の記録に失敗:", historyError);
+        alert(`Driveには保存しましたが、履歴の記録に失敗しました。\n\n${historyError instanceof Error ? historyError.message : String(historyError)}\n\nDrive: ${result.webViewLink}`);
+      }
     } catch (err) {
       console.error(err);
       alert(`保存に失敗しました: ${err instanceof Error ? err.message : "不明なエラー"}`);
