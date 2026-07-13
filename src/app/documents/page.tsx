@@ -365,9 +365,9 @@ export default function DocumentApp() {
 
   const handlePrint = () => {
     const orig = document.title;
-    const recipient = data.recipientName || "Unknown";
-    const num = data.docNumber || "NoNumber";
-    document.title = `${recipient}_${labels.title}_${effectivePrefix}-${num}`;
+    const dateStr = data.issueDate.replace(/-/g, "");
+    const recipient = data.recipientName || "宛名未入力";
+    document.title = `${dateStr}_${recipient} ${data.recipientHonorific}_${labels.title}`;
     window.print();
     setTimeout(() => { document.title = orig; }, 1000);
   };
