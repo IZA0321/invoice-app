@@ -169,6 +169,11 @@ export function withDocPrefix(
   return `${DOC_PREFIX[docType] || ""}${num}`;
 }
 
+// 番号からプレフィックスを除去（入力欄表示用）
+export function stripDocPrefix(num: string): string {
+  return (num || "").replace(/^(REC|INV|EST)-/i, "");
+}
+
 export async function getNextDocNumber(
   docType: "receipt" | "invoice" | "quotation"
 ): Promise<string> {

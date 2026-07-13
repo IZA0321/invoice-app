@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { generatePdfBlob } from "@/lib/pdfExport";
 import { uploadPdfToDrive } from "@/lib/googleDrive";
-import { getNextDocNumber, saveDocumentRecord, getRecentCustomers, withDocPrefix } from "@/lib/supabase";
+import { getNextDocNumber, saveDocumentRecord, getRecentCustomers, withDocPrefix, stripDocPrefix } from "@/lib/supabase";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
@@ -392,8 +392,9 @@ export default function DocumentApp() {
       } else {
         docNumber = withDocPrefix(docType, docNumber);
       }
-      if (docNumber !== data.docNumber) {
-        setData((prev) => ({ ...prev, docNumber: docNumber as string }));
+      // 入力欄にはプレフィックス無しの番号のみ表示（表示時に自動付与されるため）
+      if (stripDocPrefix(docNumber) !== data.docNumber) {
+        setData((prev) => ({ ...prev, docNumber: stripDocPrefix(docNumber as string) }));
       }
 
       const blob = await generatePdfBlob("preview-area");
@@ -432,7 +433,7 @@ export default function DocumentApp() {
           });
           historySaved = true;
           docNumber = attemptNumber;
-          setData((prev) => ({ ...prev, docNumber: attemptNumber }));
+          setData((prev) => ({ ...prev, docNumber: stripDocPrefix(attemptNumber) }));
           break;
         } catch (e) {
           historyError = e;
