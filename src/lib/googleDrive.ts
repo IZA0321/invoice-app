@@ -8,6 +8,8 @@ const FIXED_FOLDER_IDS: Record<string, string> = {
   "請求書": "1FyHzhK7Y9znK-SCz9MJMHZ0MnhgQ_v4v",
   "見積書": "1aT-fy4eWznnX7-Ermkk0z2Tj3CvXaYdg",
 };
+// 固定IDが無い種別（納品書など）はこの親フォルダ「経理」内に自動作成する
+const PARENT_FOLDER_ID = "10sI9KGIg-EVI86aAxo3SET1abOlfO4R0";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 const SCOPE_VERSION = "v4";
 
@@ -153,10 +155,25 @@ async function createFolder(clientId: string, name: string, parentId: string): P
   return data.id;
 }
 
-export async function getOrCreateSubfolder(_clientId: string, folderName: string): Promise<string> {
+export async function getOrCreateSubfolder(clientId: string, folderName: string): Promise<string> {
   const fixed = FIXED_FOLDER_IDS[folderName];
   if (fixed) return fixed;
-  throw new Error(`未知のフォルダ種別: ${folderName}`);
+
+  // 固定IDが無い種別は「経理」内で名前検索→無ければ作成。IDはlocalStorageに保持
+  if (folderIdCache[folderName]) return folderIdCache[folderName];
+  const storageKey = `izaDriveFolder_${folderName}`;
+  try {
+    const cached = localStorage.getItem(storageKey);
+    if (cached) {
+      folderIdCache[folderName] = cached;
+      return cached;
+    }
+  } catch {}
+  let id = await findFolderByName(clientId, PARENT_FOLDER_ID, folderName);
+  if (!id) id = await createFolder(clientId, folderName, PARENT_FOLDER_ID);
+  folderIdCache[folderName] = id;
+  try { localStorage.setItem(storageKey, id); } catch {}
+  return id;
 }
 
 export async function uploadPdfToDrive(opts: {
