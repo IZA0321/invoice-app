@@ -275,7 +275,7 @@ export default function PreviewPage() {
                   {remarksText && (
                     <div>
                       <h3 className="text-xs font-bold uppercase text-slate-500 mb-2">
-                        {doc.doc_type === "receipt" ? "備考 / 支払情報" : doc.doc_type === "quotation" ? "備考 / 条件" : "備考 / 振込先"}
+                        {doc.doc_type === "receipt" ? "備考 / 支払情報" : doc.doc_type === "quotation" ? "備考 / 条件" : doc.doc_type === "delivery" ? "備考 / 納品先" : "備考 / 振込先"}
                       </h3>
                       <div className="text-sm bg-slate-50 p-3 rounded border border-slate-200 whitespace-pre-wrap">
                         {remarksText}

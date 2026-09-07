@@ -618,8 +618,8 @@ export default function DocumentApp() {
     const docNum = data.docNumber ? `${effectivePrefix}-${data.docNumber}` : "";
     const showRegistration = docType !== "quotation";
     const remarksLabel = isJa
-      ? docType === "receipt" ? "備考 / 支払情報" : docType === "quotation" ? "備考 / 条件" : "備考 / 振込先"
-      : docType === "receipt" ? "Remarks / Payment" : docType === "quotation" ? "Remarks / Conditions" : "Remarks / Bank Info";
+      ? docType === "receipt" ? "備考 / 支払情報" : docType === "quotation" ? "備考 / 条件" : docType === "delivery" ? "備考 / 納品先" : "備考 / 振込先"
+      : docType === "receipt" ? "Remarks / Payment" : docType === "quotation" ? "Remarks / Conditions" : docType === "delivery" ? "Remarks / Ship To" : "Remarks / Bank Info";
     const tc = taxCalc;
 
     return (
