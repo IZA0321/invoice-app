@@ -8,8 +8,8 @@ import {
   deleteDocument, getMonthlySummary, MonthlySummary, updatePaymentStatus,
 } from "@/lib/supabase";
 
-type Filter = "all" | "receipt" | "invoice" | "quotation" | "unpaid" | "overdue";
-type DocType = "receipt" | "invoice" | "quotation";
+type Filter = "all" | "receipt" | "invoice" | "quotation" | "delivery" | "unpaid" | "overdue";
+type DocType = "receipt" | "invoice" | "quotation" | "delivery";
 
 interface CustomerExtra {
   tel: string;
@@ -34,6 +34,7 @@ const TYPE_LABEL: Record<string, { label: string; color: string }> = {
   receipt:   { label: "領収書", color: "#10b981" },
   invoice:   { label: "請求書", color: "#3b82f6" },
   quotation: { label: "見積書", color: "#f59e0b" },
+  delivery:  { label: "納品書", color: "#8b5cf6" },
 };
 
 const TODAY = new Date().toISOString().split("T")[0];
@@ -447,7 +448,7 @@ export default function HistoryPage() {
 
         {/* フィルター */}
         <div className="grid grid-cols-3 gap-1.5">
-          {(["all", "receipt", "invoice", "quotation", "unpaid", "overdue"] as Filter[]).map((f) => (
+          {(["all", "receipt", "invoice", "quotation", "delivery", "unpaid", "overdue"] as Filter[]).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -578,6 +579,11 @@ export default function HistoryPage() {
                     {d.doc_type !== "quotation" && (
                       <button onClick={() => prefillAndNavigate(d, "quotation", router)} className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100">
                         → 見積書
+                      </button>
+                    )}
+                    {d.doc_type !== "delivery" && (
+                      <button onClick={() => prefillAndNavigate(d, "delivery", router)} className="text-xs px-2 py-1 bg-violet-50 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-100">
+                        → 納品書
                       </button>
                     )}
                     {d.pdf_url ? (

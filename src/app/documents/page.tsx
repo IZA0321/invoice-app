@@ -61,7 +61,7 @@ const IconChevron = ({ className, open }: { className?: string; open: boolean })
 );
 
 // --- Types ---
-type DocType = "receipt" | "quotation" | "invoice";
+type DocType = "receipt" | "quotation" | "invoice" | "delivery";
 type Lang = "ja" | "en";
 type TaxMode = "exclusive" | "inclusive";
 type TaxCat = "10" | "8" | "0";
@@ -149,6 +149,11 @@ const DOC_TYPES: Record<DocType, { ja: { title: string; dateLabel: string; numbe
     ja: { title: "請求書", dateLabel: "請求日", numberLabel: "請求書番号", extraDateLabel: "振込期限" },
     en: { title: "INVOICE", dateLabel: "Invoice Date", numberLabel: "Invoice No.", extraDateLabel: "Payment Due" },
     color: "#3b82f6", prefix: "INV",
+  },
+  delivery: {
+    ja: { title: "納品書", dateLabel: "納品日", numberLabel: "納品書番号", extraDateLabel: "検収期限" },
+    en: { title: "DELIVERY NOTE", dateLabel: "Delivery Date", numberLabel: "Delivery No.", extraDateLabel: "Inspection Due" },
+    color: "#8b5cf6", prefix: "DLV",
   },
 };
 
@@ -400,7 +405,7 @@ export default function DocumentApp() {
       const blob = await generatePdfBlob("preview-area");
       const dateStr = data.issueDate.replace(/-/g, "");
       const fileName = `${dateStr}_${data.recipientName} ${data.recipientHonorific}_${labels.title}.pdf`;
-      const folderName = docType === "receipt" ? "領収書" : docType === "invoice" ? "請求書" : "見積書";
+      const folderName = docType === "receipt" ? "領収書" : docType === "invoice" ? "請求書" : docType === "delivery" ? "納品書" : "見積書";
       const result = await uploadPdfToDrive({
         clientId: GOOGLE_CLIENT_ID,
         pdfBlob: blob,
@@ -840,8 +845,8 @@ export default function DocumentApp() {
             <div className="space-y-4">
               {/* Doc Type + Lang */}
               <Card className="p-3">
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  {(["receipt", "quotation", "invoice"] as DocType[]).map((type) => (
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {(["receipt", "quotation", "invoice", "delivery"] as DocType[]).map((type) => (
                     <button key={type} onClick={() => setDocType(type)}
                       className={`py-2 text-xs font-bold rounded-lg transition-all ${docType === type ? "text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
                       style={docType === type ? { background: DOC_TYPES[type].color } : {}}>

@@ -7,7 +7,7 @@ export const supabase = url && key ? createClient(url, key) : null;
 
 export interface DocumentRecord {
   id?: string;
-  doc_type: "receipt" | "invoice" | "quotation";
+  doc_type: "receipt" | "invoice" | "quotation" | "delivery";
   doc_number: string;
   recipient_name: string;
   recipient_honorific?: string;
@@ -153,29 +153,30 @@ export async function getRecentCustomers(limit = 30): Promise<{ name: string; ho
  * 例: 20260502001 → 20260502002
  */
 // 書類種別ごとの番号プレフィックス
-export const DOC_PREFIX: Record<"receipt" | "invoice" | "quotation", string> = {
+export const DOC_PREFIX: Record<"receipt" | "invoice" | "quotation" | "delivery", string> = {
   receipt: "REC-",
   invoice: "INV-",
   quotation: "EST-",
+  delivery: "DLV-",
 };
 
 // 番号にプレフィックスを付与（既に付いていれば付け直さない）
 export function withDocPrefix(
-  docType: "receipt" | "invoice" | "quotation",
+  docType: "receipt" | "invoice" | "quotation" | "delivery",
   num: string
 ): string {
   if (!num) return num;
-  if (/^(REC|INV|EST)-/i.test(num)) return num;
+  if (/^(REC|INV|EST|DLV)-/i.test(num)) return num;
   return `${DOC_PREFIX[docType] || ""}${num}`;
 }
 
 // 番号からプレフィックスを除去（入力欄表示用）
 export function stripDocPrefix(num: string): string {
-  return (num || "").replace(/^(REC|INV|EST)-/i, "");
+  return (num || "").replace(/^(REC|INV|EST|DLV)-/i, "");
 }
 
 export async function getNextDocNumber(
-  docType: "receipt" | "invoice" | "quotation"
+  docType: "receipt" | "invoice" | "quotation" | "delivery"
 ): Promise<string> {
   const today = new Date();
   const y = today.getFullYear();
@@ -231,7 +232,7 @@ export async function getDocumentById(id: string): Promise<DocumentRecord | null
 }
 
 export async function listDocuments(
-  filter?: { docType?: "receipt" | "invoice" | "quotation"; limit?: number }
+  filter?: { docType?: "receipt" | "invoice" | "quotation" | "delivery"; limit?: number }
 ): Promise<DocumentRecord[]> {
   if (!supabase) return [];
   let query = supabase.from("documents").select("*").order("created_at", { ascending: false });

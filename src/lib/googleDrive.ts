@@ -163,7 +163,7 @@ export async function uploadPdfToDrive(opts: {
   clientId: string;
   pdfBlob: Blob;
   fileName: string;
-  folderName: "領収書" | "請求書" | "見積書";
+  folderName: "領収書" | "請求書" | "見積書" | "納品書";
 }): Promise<{ id: string; webViewLink: string }> {
   const folderId = await getOrCreateSubfolder(opts.clientId, opts.folderName);
 

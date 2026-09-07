@@ -20,6 +20,7 @@ const DOC_CONFIG: Record<string, { title: string; color: string; dateLabel: stri
   receipt:   { title: "領収書", color: "#10b981", dateLabel: "領収日",   numberLabel: "領収書番号", dueDateLabel: "支払日" },
   invoice:   { title: "請求書", color: "#3b82f6", dateLabel: "請求日",   numberLabel: "請求書番号", dueDateLabel: "振込期限" },
   quotation: { title: "見積書", color: "#f59e0b", dateLabel: "見積日",   numberLabel: "見積書番号", dueDateLabel: "有効期限" },
+  delivery:  { title: "納品書", color: "#8b5cf6", dateLabel: "納品日",   numberLabel: "納品書番号", dueDateLabel: "検収期限" },
 };
 
 const TAX_CATS: Record<string, { label: string; rate: number }> = {
