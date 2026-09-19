@@ -7,11 +7,12 @@ const FIXED_FOLDER_IDS: Record<string, string> = {
   "領収書": "19PVh_2WVPlTi0pi0WfopZqYBpC1Tm4YT",
   "請求書": "1FyHzhK7Y9znK-SCz9MJMHZ0MnhgQ_v4v",
   "見積書": "1aT-fy4eWznnX7-Ermkk0z2Tj3CvXaYdg",
+  "納品書": "1QX_iqO4_9cHo8t67P6lBSuTj4JeYO031",
 };
 // 固定IDが無い種別（納品書など）はこの親フォルダ「経理」内に自動作成する
 const PARENT_FOLDER_ID = "10sI9KGIg-EVI86aAxo3SET1abOlfO4R0";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
-const SCOPE_VERSION = "v4";
+const SCOPE_VERSION = "v5";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type GoogleGlobal = { accounts: { oauth2: { initTokenClient: (cfg: any) => any } } };
