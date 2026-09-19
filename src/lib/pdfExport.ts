@@ -83,11 +83,13 @@ export async function generatePdfBlob(elementId = "preview-area"): Promise<Blob>
       windowWidth: actualWidth,
     });
 
-    const imgData = canvas.toDataURL("image/png");
+    // JPEG圧縮で埋め込み（PNGだと7〜9MBになるため）。白地の書類は品質0.85で十分
+    const imgData = canvas.toDataURL("image/jpeg", 0.85);
     const pdf = new jsPDF({
       orientation: "portrait",
       unit: "mm",
       format: "a4",
+      compress: true,
     });
 
     const pageW = pdf.internal.pageSize.getWidth();
@@ -96,12 +98,12 @@ export async function generatePdfBlob(elementId = "preview-area"): Promise<Blob>
     const imgHFull = pageW * imgRatio;
 
     if (imgHFull <= pageH) {
-      pdf.addImage(imgData, "PNG", 0, 0, pageW, imgHFull);
+      pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgHFull, undefined, "FAST");
     } else {
       // 1ページに収めるため縮小
       const scaledW = pageH / imgRatio;
       const offsetX = (pageW - scaledW) / 2;
-      pdf.addImage(imgData, "PNG", offsetX, 0, scaledW, pageH);
+      pdf.addImage(imgData, "JPEG", offsetX, 0, scaledW, pageH, undefined, "FAST");
     }
 
     return pdf.output("blob");
