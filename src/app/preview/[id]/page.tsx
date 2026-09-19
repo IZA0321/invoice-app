@@ -41,7 +41,24 @@ function normalizeItem(it: Item) {
   };
 }
 
-function calcTax(items: Item[]) {
+// 保存済みの total_amount から外税/内税を推定する
+// （明細の単価合計＋税 ≒ total なら外税、単価合計 ≒ total なら内税）
+function inferTaxMode(items: Item[], total: number | undefined): "exclusive" | "inclusive" {
+  if (total === undefined || total === null) return "inclusive";
+  let sum = 0, sumWithTax = 0;
+  for (const raw of items) {
+    const it = normalizeItem(raw);
+    const line = it.unitPrice * it.quantity;
+    const rate = TAX_CATS[it.taxCat || "10"]?.rate ?? 0.1;
+    sum += line;
+    sumWithTax += line + Math.round(line * rate);
+  }
+  const dEx = Math.abs(sumWithTax - total);
+  const dIn = Math.abs(sum - total);
+  return dEx < dIn ? "exclusive" : "inclusive";
+}
+
+function calcTax(items: Item[], mode: "exclusive" | "inclusive" = "inclusive") {
   let taxable10 = 0, taxable8 = 0, tax10 = 0, tax8 = 0, nonTaxable = 0;
   for (const raw of items) {
     const it = normalizeItem(raw);
@@ -49,9 +66,16 @@ function calcTax(items: Item[]) {
     const cat = it.taxCat || "10";
     const rate = TAX_CATS[cat]?.rate ?? 0.1;
     if (cat === "0") { nonTaxable += line; continue; }
-    // 内税として逆算
-    const beforeTax = Math.round(line / (1 + rate));
-    const taxAmt = line - beforeTax;
+    let beforeTax: number, taxAmt: number;
+    if (mode === "exclusive") {
+      // 外税：単価は税抜
+      beforeTax = line;
+      taxAmt = Math.round(line * rate);
+    } else {
+      // 内税：税込から逆算
+      beforeTax = Math.round(line / (1 + rate));
+      taxAmt = line - beforeTax;
+    }
     if (cat === "10") { taxable10 += beforeTax; tax10 += taxAmt; }
     else              { taxable8  += beforeTax; tax8  += taxAmt; }
   }
@@ -82,7 +106,7 @@ export default function PreviewPage() {
   }, [id]);
 
   const items: Item[] = useMemo(() => (doc?.items as Item[]) || [], [doc]);
-  const tc = useMemo(() => calcTax(items), [items]);
+  const tc = useMemo(() => calcTax(items, inferTaxMode(items, doc?.total_amount)), [items, doc?.total_amount]);
   const totalAmount = doc?.total_amount ?? (tc.subTotal + tc.totalTax + tc.nonTaxable);
   const cfg = DOC_CONFIG[doc?.doc_type || "invoice"];
 
