@@ -5,6 +5,9 @@ const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 export const supabase = url && key ? createClient(url, key) : null;
 
+// 書類管理アプリにログインできるメールアドレス（DB側のRLSポリシーと揃える）
+export const ALLOWED_EMAILS = ["iza.japan2025@gmail.com", "k.takahashi@iza-japan.com"];
+
 export interface DocumentRecord {
   id?: string;
   doc_type: "receipt" | "invoice" | "quotation" | "delivery";
@@ -55,9 +58,10 @@ const DELETE_API_URL = "https://iza-line-bot.vercel.app/api/documents/delete";
 export async function deleteDocument(id: string): Promise<{ driveDeleted: boolean }> {
   // まずLINE bot経由でSupabase行 + Driveファイルを削除
   try {
+    const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : undefined;
     const res = await fetch(DELETE_API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ id }),
     });
     if (res.ok) {
