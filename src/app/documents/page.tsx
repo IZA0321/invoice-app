@@ -271,11 +271,17 @@ export default function DocumentApp() {
   // sessionStorageからプリフィル情報を読み込み（コピー or 種別変換）
   useEffect(() => {
     try {
-      const prefillStr = sessionStorage.getItem("izaPrefill");
+      // sessionStorage（同一タブ）→ localStorage（別タブからの転送）の順に読む。読んだら削除
+      let prefillStr = sessionStorage.getItem("izaPrefill");
+      if (prefillStr) sessionStorage.removeItem("izaPrefill");
+      else {
+        prefillStr = localStorage.getItem("izaPrefill");
+        if (prefillStr) localStorage.removeItem("izaPrefill");
+      }
       if (prefillStr) {
         const prefill = JSON.parse(prefillStr);
-        sessionStorage.removeItem("izaPrefill");
         if (prefill.docType) setDocType(prefill.docType);
+        if (prefill.taxMode === "exclusive" || prefill.taxMode === "inclusive") setTaxMode(prefill.taxMode);
         // 見積→請求書変換時は件名に元番号を付記
         const autoSubject = prefill.fromDocType === "quotation" && prefill.docType === "invoice" && prefill.fromDocNumber
           ? `${prefill.subject || ""}（見積書 ${prefill.fromDocNumber} より）`.trim()
@@ -287,6 +293,8 @@ export default function DocumentApp() {
           subject: autoSubject ?? prev.subject,
           paymentMethod: prefill.paymentMethod ?? prev.paymentMethod,
           remarks: prefill.remarks ?? prev.remarks,
+          issueDate: prefill.issueDate ?? prev.issueDate,
+          extraDate: prefill.extraDate ?? prev.extraDate,
           items: prefill.items && prefill.items.length > 0 ? prefill.items.map((it: Item) => ({ ...it, id: Date.now() + Math.random() })) : prev.items,
           docNumber: "", // 新規採番
         }));
