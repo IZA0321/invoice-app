@@ -20,6 +20,14 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
+  // 前回のメールアドレスを記憶して1タップで送れるようにする
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("izaLoginEmail");
+      if (saved) setEmail(saved);
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (!supabase) {
       setReady(true);
@@ -53,6 +61,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       setMessage(`送信に失敗しました：${error.message}`);
       return;
     }
+    try { localStorage.setItem("izaLoginEmail", addr); } catch {}
     setEmail(addr);
     setStep("code");
     setMessage("ログインコードをメールで送りました（数分以内に届きます）。");
@@ -72,7 +81,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow p-6">
         <h1 className="text-lg font-bold text-slate-800 mb-1">IZA 書類管理</h1>
-        <p className="text-sm text-slate-500 mb-5">ログインしてください</p>
+        <p className="text-sm text-slate-500 mb-5">初回のみログインが必要です（以後この端末では自動）</p>
         {step === "email" ? (
           <form onSubmit={sendCode} className="space-y-3">
             <input
@@ -83,6 +92,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="メールアドレス"
+              autoFocus={!email}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-base"
             />
             <button
@@ -102,6 +112,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
               autoComplete="one-time-code"
               pattern="[0-9]*"
               maxLength={6}
+              autoFocus
               required
               value={code}
               onChange={(e) => setCode(e.target.value)}

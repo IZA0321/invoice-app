@@ -3,7 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-export const supabase = url && key ? createClient(url, key) : null;
+// セッションは端末に永続保存し、自動更新。再ログインは新しい端末/ブラウザの初回のみ
+export const supabase = url && key
+  ? createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } })
+  : null;
 
 // 書類管理アプリにログインできるメールアドレス（DB側のRLSポリシーと揃える）
 export const ALLOWED_EMAILS = ["iza.japan2025@gmail.com", "k.takahashi@iza-japan.com"];
