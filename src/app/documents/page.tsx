@@ -268,6 +268,17 @@ export default function DocumentApp() {
     } catch {}
   }, []);
 
+  // Drive障害・認証不可時のフォールバック：履歴（Supabase）のみ登録するフックを公開
+  // 使い方（開発者コンソール）: await window.izaSaveDocumentRecord({ doc_type, doc_number, ... })
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).izaSaveDocumentRecord = (rec: Parameters<typeof saveDocumentRecord>[0]) => saveDocumentRecord(rec);
+    return () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).izaSaveDocumentRecord;
+    };
+  }, []);
+
   // sessionStorageからプリフィル情報を読み込み（コピー or 種別変換）
   useEffect(() => {
     try {
