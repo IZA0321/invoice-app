@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { generatePdfBlob } from "@/lib/pdfExport";
 import { uploadPdfToDrive } from "@/lib/googleDrive";
-import { getNextDocNumber, saveDocumentRecord, getRecentCustomers, withDocPrefix, stripDocPrefix } from "@/lib/supabase";
+import { getNextDocNumber, saveDocumentRecord, updateDocumentByNumber, getRecentCustomers, withDocPrefix, stripDocPrefix } from "@/lib/supabase";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
@@ -273,9 +273,13 @@ export default function DocumentApp() {
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).izaSaveDocumentRecord = (rec: Parameters<typeof saveDocumentRecord>[0]) => saveDocumentRecord(rec);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).izaUpdateDocumentByNumber = (n: string, f: Parameters<typeof updateDocumentByNumber>[1]) => updateDocumentByNumber(n, f);
     return () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (window as any).izaSaveDocumentRecord;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).izaUpdateDocumentByNumber;
     };
   }, []);
 

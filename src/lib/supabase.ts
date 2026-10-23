@@ -222,6 +222,15 @@ export async function getNextDocNumber(
   return `${prefix}${datePrefix}${String(lastSeq + 1).padStart(3, "0")}`;
 }
 
+export async function updateDocumentByNumber(
+  docNumber: string,
+  fields: Partial<Pick<DocumentRecord, "remarks" | "subject" | "payment_method" | "items" | "total_amount" | "issue_date" | "due_date">>
+): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("documents").update(fields).eq("doc_number", docNumber);
+  if (error) throw error;
+}
+
 export async function saveDocumentRecord(rec: DocumentRecord): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.from("documents").insert(rec);
