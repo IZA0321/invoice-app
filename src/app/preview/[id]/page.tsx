@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getDocumentById, DocumentRecord } from "@/lib/supabase";
-import { generatePdfBlob } from "@/lib/pdfExport";
 
 // ---------- IZA固定情報 ----------
+const BOT_PDF_BASE = "https://iza-line-bot.vercel.app/api/doc-pdf";
+
 const IZA = {
   nameJa: "IZA株式会社",
   addressJa: "〒180-0022 東京都武蔵野市境1-15-10 イストワール302",
@@ -93,63 +94,36 @@ export default function PreviewPage() {
   const [doc, setDoc] = useState<DocumentRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const autoDlFiredRef = useRef(false);
 
   useEffect(() => {
     if (!id) return;
+    // 旧リンク（?download=1）はログイン不要のBot側PDFへ転送（blob URLを作らない）
+    if (autoDownload) {
+      window.location.replace(`${BOT_PDF_BASE}/${id}`);
+      return;
+    }
     getDocumentById(id).then((d) => {
-      if (d) setDoc(d);
-      else setNotFound(true);
-      setLoading(false);
+      if (d) {
+        setDoc(d);
+        setLoading(false);
+      } else {
+        // 未ログイン（RLSで取得不可）などの場合もBot側PDFを表示する
+        window.location.replace(`${BOT_PDF_BASE}/${id}`);
+      }
     });
-  }, [id]);
+  }, [id, autoDownload]);
 
   const items: Item[] = useMemo(() => (doc?.items as Item[]) || [], [doc]);
   const tc = useMemo(() => calcTax(items, inferTaxMode(items, doc?.total_amount)), [items, doc?.total_amount]);
   const totalAmount = doc?.total_amount ?? (tc.subTotal + tc.totalTax + tc.nonTaxable);
   const cfg = DOC_CONFIG[doc?.doc_type || "invoice"];
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (!doc) return;
-    setDownloading(true);
-    try {
-      const blob = await generatePdfBlob("preview-area");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      // ファイル名の宛名（敬称付き）: 宛名 > 依頼者 > 宛名なし
-      const recName = (doc.recipient_name || "").trim();
-      const honorific = doc.recipient_honorific || "御中";
-      let nameForFile: string;
-      if (recName) {
-        // 既に末尾が敬称ならそのまま、無ければ付与
-        nameForFile = /[様御中殿]$/.test(recName) ? recName : `${recName}${honorific}`;
-      } else {
-        const reqName = (doc.requester_name || "").trim();
-        nameForFile = reqName ? `宛名なし_${reqName}` : "宛名なし";
-      }
-      const safeName = nameForFile.replace(/[\\/:*?"<>|\s]+/g, "_");
-      const fname = `${doc.issue_date.replace(/-/g, "")}_${safeName}_${cfg.title}.pdf`;
-      a.href = url;
-      a.download = fname;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert("PDF生成に失敗しました: " + (e instanceof Error ? e.message : "不明なエラー"));
-    } finally {
-      setDownloading(false);
-    }
+    // iPhone等で共有時にblob URLが混ざらないよう、サーバー生成PDFを直接開く
+    window.open(`${BOT_PDF_BASE}/${doc.id}`, "_blank", "noopener");
   };
 
-  // ?download=1 でアクセス時、プレビュー描画後に自動でDL実行（1回のみ）
-  useEffect(() => {
-    if (!autoDownload || !doc || autoDlFiredRef.current) return;
-    autoDlFiredRef.current = true;
-    // 描画完了を少し待ってからキャプチャ
-    const t = setTimeout(() => { handleDownload(); }, 800);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoDownload, doc]);
 
   if (loading) return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center">
@@ -206,10 +180,9 @@ export default function PreviewPage() {
             )}
             <button
               onClick={handleDownload}
-              disabled={downloading}
               className="text-xs px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
             >
-              {downloading ? "生成中…" : "⬇️ PDFダウンロード"}
+              ⬇️ PDFを開く
             </button>
           </div>
         </div>

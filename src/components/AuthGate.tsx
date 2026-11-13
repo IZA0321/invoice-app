@@ -6,7 +6,8 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase, ALLOWED_EMAILS } from "@/lib/supabase";
 
 // ログイン不要で公開するページ（取引先向けのダウンロード等）
-const PUBLIC_PATHS = ["/downloads"];
+// /render はサーバー側PDF生成用。渡されたデータを描画するだけでDBは読まない
+const PUBLIC_PATHS = ["/downloads", "/render", "/preview"];
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
