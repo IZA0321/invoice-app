@@ -4,8 +4,19 @@
     {
       "name": "invoice-app",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "invoice-app-docs-api",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "scripts/dev-with-secrets.sh"
+      ],
+      "port": 3100
     }
   ]
 }
